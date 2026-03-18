@@ -1124,34 +1124,27 @@ document.addEventListener('DOMContentLoaded', () => {
 // CSV PARSER
 // ============================================================
 function parseCSVText(text) {
-  const lines = [];
-  let cur = '', inQ = false;
+  // Single-pass RFC 4180 compliant CSV parser
+  const rows = [];
+  let fields = [], field = '', inQ = false;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch === '"') {
-      if (inQ && text[i+1] === '"') { cur += '"'; i++; }
+      if (inQ && text[i+1] === '"') { field += '"'; i++; } // escaped quote
       else inQ = !inQ;
+    } else if (ch === ',' && !inQ) {
+      fields.push(field); field = '';
     } else if ((ch === '\n' || ch === '\r') && !inQ) {
       if (ch === '\r' && text[i+1] === '\n') i++;
-      lines.push(cur);
-      cur = '';
-    } else { cur += ch; }
-  }
-  if (cur) lines.push(cur);
-  return lines.filter(l => l.trim()).map(line => {
-    const fields = [];
-    let field = '', inQF = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQF && line[i+1] === '"') { field += '"'; i++; }
-        else inQF = !inQF;
-      } else if (ch === ',' && !inQF) { fields.push(field); field = ''; }
-      else { field += ch; }
+      fields.push(field); field = '';
+      if (fields.some(f => f !== '')) rows.push(fields);
+      fields = [];
+    } else {
+      field += ch;
     }
-    fields.push(field);
-    return fields;
-  });
+  }
+  if (field || fields.length) { fields.push(field); if (fields.some(f => f !== '')) rows.push(fields); }
+  return rows;
 }
 
 // ============================================================
