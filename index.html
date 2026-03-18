@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M&A 案件メール配信システム</title>
+<style>
+:root {
+  --primary: #1a56db; --primary-hover: #1344b0; --primary-light: #e8eefb;
+  --danger: #dc2626; --danger-hover: #b91c1c;
+  --success: #16a34a; --warning: #f59e0b;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+  --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif; background: var(--gray-50); color: var(--gray-800); line-height: 1.6; }
+.header { background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 100%); color: white; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow-md); position: sticky; top: 0; z-index: 100; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.user-info { font-size: 13px; opacity: 0.9; }
+.btn-logout { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 14px; border-radius: var(--radius); cursor: pointer; font-size: 13px; }
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 1200px) { .grid { grid-template-columns: 1fr; } }
+.card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--gray-200); }
+.card-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; }
+.card-header h2 { font-size: 16px; font-weight: 600; }
+.card-body { padding: 20px; }
+.btn { padding: 8px 16px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:disabled { background: var(--gray-300); cursor: not-allowed; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: var(--danger-hover); }
+.btn-outline { background: white; color: var(--gray-700); border: 1px solid var(--gray-300); }
+.btn-outline:hover { background: var(--gray-50); }
+.btn-success { background: var(--success); color: white; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-lg { padding: 12px 28px; font-size: 16px; }
+.login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 50%, #3b82f6 100%); }
+.login-box { background: white; border-radius: 12px; padding: 48px; max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.15); text-align: center; }
+.login-box h1 { font-size: 24px; margin-bottom: 8px; }
+.login-box p { color: var(--gray-500); margin-bottom: 32px; font-size: 14px; }
+.login-box .btn { width: 100%; justify-content: center; padding: 14px; font-size: 16px; }
+.login-logo { font-size: 48px; margin-bottom: 16px; }
+.steps { display: flex; margin-bottom: 24px; background: white; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--gray-200); overflow: hidden; }
+.step { flex: 1; padding: 14px 16px; text-align: center; font-size: 14px; font-weight: 500; color: var(--gray-400); border-right: 1px solid var(--gray-200); transition: all 0.3s; }
+.step:last-child { border-right: none; }
+.step.active { color: var(--primary); background: var(--primary-light); }
+.step.completed { color: var(--success); background: #f0fdf4; }
+.step-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--gray-200); color: var(--gray-500); font-size: 12px; font-weight: 700; margin-right: 6px; }
+.step.active .step-num { background: var(--primary); color: white; }
+.step.completed .step-num { background: var(--success); color: white; }
+/* Table */
+.table-wrapper { overflow: auto; border: 1px solid var(--gray-200); border-radius: var(--radius); max-height: 500px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { position: sticky; top: 0; z-index: 10; }
+th { background: var(--gray-100); padding: 9px 10px; text-align: left; font-weight: 600; color: var(--gray-700); border-bottom: 2px solid var(--gray-200); white-space: nowrap; font-size: 12px; }
+td { padding: 8px 10px; border-bottom: 1px solid var(--gray-100); white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+td.wrap { white-space: normal; }
+tr:hover td { background: var(--primary-light); }
+tr.selected td { background: #dbeafe; }
+tr.sent-row td { opacity: 0.55; }
+.cb-cell { width: 36px; text-align: center; max-width: 36px; }
+input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--primary); }
+.company-cell { max-width: 160px; }
+.email-cell { max-width: 200px; font-family: monospace; font-size: 12px; }
+/* Badges */
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.badge-primary { background: var(--primary-light); color: var(--primary); }
+.badge-success { background: #dcfce7; color: var(--success); }
+.badge-sent { background: #fee2e2; color: #dc2626; }
+.badge-unsent { background: #dcfce7; color: #16a34a; }
+.badge-warning { background: #fef3c7; color: #b45309; }
+/* Filter bar */
+.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.filter-bar input, .filter-bar select { padding: 7px 10px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 13px; background: white; }
+.filter-bar input { flex: 1; min-width: 180px; }
+.filter-bar select { min-width: 130px; }
+/* PJ Selector */
+.pj-panel { background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
+.pj-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.pj-row:last-child { margin-bottom: 0; }
+.pj-select { flex: 1; min-width: 220px; padding: 8px 12px; border: 1.5px solid #93c5fd; border-radius: var(--radius); font-size: 14px; font-weight: 600; background: white; }
+.pj-info { background: white; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 10px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pj-num { font-weight: 700; color: var(--primary); font-size: 15px; }
+.pj-upload { margin-top: 10px; }
+/* Form */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 5px; }
+.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 14px; font-family: inherit; transition: border-color 0.2s; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+.form-group textarea { min-height: 200px; resize: vertical; line-height: 1.7; }
+.help-text { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+.template-select { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 14px; margin-bottom: 14px; background: white; }
+/* Upload */
+.upload-area { border: 2px dashed var(--gray-300); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--gray-50); }
+.upload-area:hover, .upload-area.drag-over { border-color: var(--primary); background: var(--primary-light); }
+.upload-area.has-file { border-color: var(--success); background: #f0fdf4; }
+.upload-icon { font-size: 28px; margin-bottom: 6px; }
+.file-info { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); margin-top: 8px; }
+.file-info .name { flex: 1; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-info .size { font-size: 12px; color: var(--gray-500); white-space: nowrap; }
+.file-info .remove { color: var(--danger); cursor: pointer; font-size: 18px; line-height: 1; flex-shrink: 0; }
+/* Preview */
+.preview-box { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 20px; margin-bottom: 14px; }
+.preview-subject { font-weight: 600; font-size: 15px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); }
+.preview-body { font-size: 14px; white-space: pre-wrap; line-height: 1.8; }
+.preview-attachment { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); margin-top: 10px; font-size: 13px; }
+/* Progress */
+.progress-bar { width: 100%; height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden; margin: 14px 0; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #3b82f6); border-radius: 4px; transition: width 0.3s; }
+.send-status { font-size: 13px; color: var(--gray-600); }
+.send-log { max-height: 260px; overflow-y: auto; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 10px; background: var(--gray-50); font-size: 12px; font-family: 'Consolas', monospace; }
+.log-entry { padding: 2px 0; border-bottom: 1px solid var(--gray-100); }
+.log-entry.success { color: var(--success); }
+.log-entry.error { color: var(--danger); }
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; }
+.modal { background: white; border-radius: 12px; max-width: 520px; width: 92%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.modal-lg { max-width: 780px; }
+.modal-header { padding: 18px 22px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; }
+.modal-header h3 { font-size: 17px; font-weight: 600; }
+.modal-body { padding: 22px; }
+.modal-footer { padding: 14px 22px; border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end; gap: 8px; }
+.close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--gray-400); line-height: 1; }
+/* Toast */
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 18px; border-radius: var(--radius); color: white; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-md); z-index: 300; transform: translateY(100px); opacity: 0; transition: all 0.3s; max-width: 360px; }
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast-success { background: var(--success); }
+.toast-error { background: var(--danger); }
+.toast-info { background: var(--primary); }
+/* Misc */
+.action-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; margin-top: 14px; border-top: 1px solid var(--gray-200); }
+.sender-info { background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.hidden { display: none !important; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--gray-100); }
+::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+/* Tabs for data management modals */
+.tab-bar { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 18px; gap: 0; }
+.tab-btn { padding: 9px 18px; border: none; background: none; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--gray-500); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+/* Stat boxes */
+.stat-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.stat-box { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 10px 16px; text-align: center; min-width: 90px; }
+.stat-box .num { font-size: 22px; font-weight: 700; color: var(--primary); }
+.stat-box .lbl { font-size: 11px; color: var(--gray-500); }
+/* Inline edit row */
+.inline-form { background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 14px; margin-bottom: 14px; }
+.inline-form .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.inline-form .row .form-group { margin-bottom: 0; flex: 1; min-width: 120px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">📧</div>
+    <h1>M&A 案件メール配信システム</h1>
+    <p>買い手候補リストへのPJ別メール一括配信ツール</p>
+    <button class="btn btn-primary btn-lg" onclick="handleLogin()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+      Googleアカウントでログイン
+    </button>
+    <div style="margin-top:20px; display:flex; gap:8px; justify-content:center;">
+      <button class="btn btn-outline btn-sm" onclick="showSetup()">⚙️ 初期設定</button>
+    </div>
+    <p style="margin-top:14px; font-size:12px; color:var(--gray-400);">※ Gmail APIへのアクセス権限が必要です（メール送信のみ）</p>
+  </div>
+</div>
+
+<!-- SETUP MODAL -->
+<div id="setupModal" class="modal-overlay hidden" onclick="event.target===this&&closeSetup()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚙️ 初期設定</h3>
+      <button class="close-btn" onclick="closeSetup()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px;">Google Cloud ConsoleでOAuth 2.0クライアントIDを作成し、以下を入力してください。</p>
+      <div class="form-group"><label>Client ID</label><input type="text" id="setupClientId" placeholder="xxxx.apps.googleusercontent.com"><div class="help-text">Google Cloud Console → APIとサービス → 認証情報</div></div>
+      <details style="margin-top:14px;">
+        <summary style="cursor:pointer;font-size:13px;color:var(--primary);font-weight:600;">📋 Google Cloud Console 設定手順</summary>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:8px;padding:12px;background:var(--gray-50);border-radius:var(--radius);line-height:1.8;">
+          1. <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> にアクセス<br>
+          2. プロジェクトを作成し <b>Gmail API</b> を有効化<br>
+          3. 認証情報 → OAuth 2.0 クライアントID（ウェブアプリ）を作成<br>
+          4. 承認済みJavaScriptオリジン に <code>http://localhost:8888</code> を追加<br>
+          5. クライアントIDをここに貼り付け
+        </div>
+      </details>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeSetup()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveSetup()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW PJ MODAL -->
+<div id="newPJModal" class="modal-overlay hidden" onclick="event.target===this&&closeNewPJModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📁 新規PJ作成</h3>
+      <button class="close-btn" onclick="closeNewPJModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>PJ番号</label>
+        <input type="text" id="newPJNum" placeholder="例：PJ-001" style="font-weight:700;font-size:16px;">
+        <div class="help-text">「PJ-」から始まる番号を入力してください</div>
+      </div>
+      <div class="form-group"><label>案件名</label><input type="text" id="newPJName" placeholder="例：製造業 売上3億円 M&A案件"></div>
+      <div class="form-group"><label>業種</label><input type="text" id="newPJIndustry" placeholder="例：製造業"></div>
+      <div class="form-group"><label>概要（ノンネーム情報）</label><textarea id="newPJDesc" style="min-height:80px;" placeholder="例：関西の製造業。売上3億、利益5000万。後継者不在が売却理由。"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeNewPJModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveNewPJ()">作成して選択</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUYER MANAGEMENT MODAL -->
+<div id="buyerMgmtModal" class="modal-overlay hidden" onclick="event.target===this&&closeBuyerMgmt()">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>📊 買い手データ管理</h3>
+      <button class="close-btn" onclick="closeBuyerMgmt()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchBuyerTab('import',this)">📥 CSVインポート</button>
+        <button class="tab-btn" onclick="switchBuyerTab('list',this)">📋 一覧・管理</button>
+        <button class="tab-btn" onclick="switchBuyerTab('add',this)">➕ 手動追加</button>
+      </div>
+
+      <!-- Tab: Import -->
+      <div id="buyerTab-import" class="tab-content active">
+        <div style="font-size:13px;color:var(--gray-600);background:var(--gray-50);border-radius:var(--radius);padding:12px;margin-bottom:14px;line-height:1.8;">
+          <b>CSVフォーマット（1行目はヘッダー）：</b><br>
+          <code style="font-size:11px;">企業名,業種,案件No,連絡方法,連絡先1_名前,連絡先1_役職,連絡先1_メール,連絡先2_名前,連絡先2_役職,連絡先2_メール,連絡先3_名前,連絡先3_役職,連絡先3_メール</code><br><br>
+          ※ 既存のスプレッドシートから「ファイル→ダウンロード→CSVファイル」でエクスポート可能
+        </div>
+        <div class="upload-area" id="buyerCsvArea" onclick="document.getElementById('buyerCsvInput').click()">
+          <div class="upload-icon">📄</div>
+          <div style="font-size:13px;font-weight:500;color:var(--gray-700);">クリックしてCSVを選択</div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:3px;">またはドラッグ＆ドロップ（.csv）</div>
+        </div>
+        <input type="file" id="buyerCsvInput" accept=".csv" style="display:none" onchange="handleBuyerCsvFile(this)">
+        <div id="csvPreviewArea" class="hidden" style="margin-top:14px;">
+          <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">プレビュー（先頭5件）：</div>
+          <div class="table-wrapper" style="max-height:200px;"><table><thead id="csvPreviewHead"></thead><tbody id="csvPreviewBody"></tbody></table></div>
+          <div style="margin-top:10px;font-size:13px;color:var(--gray-600);" id="csvPreviewInfo"></div>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="importCsvBuyers('append')">➕ 既存データに追加</button>
+            <button class="btn btn-danger btn-sm" onclick="importCsvBuyers('overwrite')">🔄 既存データを上書き</button>
+            <button class="btn btn-outline btn-sm" onclick="cancelCsvImport()">キャンセル</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: List -->
+      <div id="buyerTab-list" class="tab-content">
+        <div class="stat-row" id="buyerStats"></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="exportBuyersCsv()">📤 CSVエクスポート</button>
+          <button class="btn btn-danger btn-sm" onclick="clearAllBuyers()">🗑️ 全データ削除</button>
+        </div>
+        <input type="text" id="buyerListSearch" placeholder="🔍 絞り込み..." oninput="renderBuyerList()" style="width:100%;padding:7px 10px;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:13px;margin-bottom:10px;">
+        <div class="table-wrapper" style="max-height:320px;">
+          <table>
+            <thead><tr><th>企業名</th><th>業種</th><th>案件No</th><th>連絡先1</th><th>メール1</th><th></th></tr></thead>
+            <tbody id="buyerListBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Add -->
+      <div id="buyerTab-add" class="tab-content">
+        <div class="form-group"><label>企業名 <span style="color:var(--danger)">*</span></label><input type="text" id="addCompanyName" placeholder="例：株式会社○○"></div>
+        <div style="display:flex;gap:10px;">
+          <div class="form-group" style="flex:1;"><label>業種</label><input type="text" id="addIndustry" placeholder="例：製造業"></div>
+          <div class="form-group" style="flex:1;"><label>案件No</label><input type="text" id="addCaseNo" placeholder="例：A-001"></div>
+        </div>
+        <div class="form-group"><label>連絡方法</label><input type="text" id="addContactMethod" placeholder="例：メール"></div>
+        <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">連絡先（最大3件）</div>
+        <div id="addContactsArea">
+          <div class="inline-form" style="margin-bottom:8px;">
+            <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px;">連絡先1</div>
+            <div class="row">
+              <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="addName1" placeholder="山田 太郎"></div>
+              <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="addRole1" placeholder="代表取締役"></div>
+              <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="addEmail1" placeholder="taro@example.com"></div>
+            </div>
+          </div>
+          <div class="inline-form" style="margin-bottom:8px;">
+            <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px;">連絡先2（任意）</div>
+            <div class="row">
+              <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="addName2" placeholder=""></div>
+              <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="addRole2" placeholder=""></div>
+              <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="addEmail2" placeholder=""></div>
+            </div>
+          </div>
+          <div class="inline-form" style="margin-bottom:8px;">
+            <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px;">連絡先3（任意）</div>
+            <div class="row">
+              <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="addName3" placeholder=""></div>
+              <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="addRole3" placeholder=""></div>
+              <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="addEmail3" placeholder=""></div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addBuyerManually()">➕ 追加する</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeBuyerMgmt()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATE MANAGEMENT MODAL -->
+<div id="templateMgmtModal" class="modal-overlay hidden" onclick="event.target===this&&closeTemplateMgmt()">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>📝 テンプレート管理</h3>
+      <button class="close-btn" onclick="closeTemplateMgmt()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="templateEditArea" class="inline-form hidden" style="margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:10px;" id="templateEditTitle">新規テンプレート</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="form-group" style="min-width:80px;"><label style="font-size:11px;">No</label><input type="text" id="tmplNo" placeholder="1"></div>
+          <div class="form-group" style="flex:1;min-width:120px;"><label style="font-size:11px;">タイミング</label><input type="text" id="tmplTiming" placeholder="初回アプローチ"></div>
+        </div>
+        <div class="form-group"><label style="font-size:11px;">件名</label><input type="text" id="tmplSubject" placeholder="【案件ご紹介】..."></div>
+        <div class="form-group"><label style="font-size:11px;">本文（{{企業名}} {{担当者名}} {{役職}} {{業種}} は自動置換）</label><textarea id="tmplBody" style="min-height:140px;"></textarea></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveTemplateEdit()">保存</button>
+          <button class="btn btn-outline btn-sm" onclick="cancelTemplateEdit()">キャンセル</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:13px;color:var(--gray-600);" id="tmplCount">0件</span>
+        <button class="btn btn-primary btn-sm" onclick="showTemplateAdd()">➕ 新規追加</button>
+      </div>
+      <div class="table-wrapper" style="max-height:320px;">
+        <table>
+          <thead><tr><th>No</th><th>タイミング</th><th>件名</th><th style="width:100px;"></th></tr></thead>
+          <tbody id="templateMgmtBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeTemplateMgmt()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT BUYER MODAL -->
+<div id="editBuyerModal" class="modal-overlay hidden" onclick="event.target===this&&closeEditBuyer()">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>✏️ 買い手情報編集</h3>
+      <button class="close-btn" onclick="closeEditBuyer()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>企業名 <span style="color:var(--danger)">*</span></label><input type="text" id="editCompanyName"></div>
+      <div style="display:flex;gap:10px;">
+        <div class="form-group" style="flex:1;"><label>業種</label><input type="text" id="editIndustry"></div>
+        <div class="form-group" style="flex:1;"><label>案件No</label><input type="text" id="editCaseNo"></div>
+      </div>
+      <div class="form-group"><label>連絡方法</label><input type="text" id="editContactMethod"></div>
+      <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">連絡先（最大3件）</div>
+      <div class="inline-form" style="margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px;">連絡先1</div>
+        <div class="row">
+          <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="editName1"></div>
+          <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="editRole1"></div>
+          <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="editEmail1"></div>
+        </div>
+      </div>
+      <div class="inline-form" style="margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px;">連絡先2（任意）</div>
+        <div class="row">
+          <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="editName2"></div>
+          <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="editRole2"></div>
+          <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="editEmail2"></div>
+        </div>
+      </div>
+      <div class="inline-form" style="margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px;">連絡先3（任意）</div>
+        <div class="row">
+          <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="editName3"></div>
+          <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="editRole3"></div>
+          <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="editEmail3"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeEditBuyer()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveEditBuyer()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="hidden">
+  <div class="header">
+    <h1>📧 M&A 案件メール配信システム</h1>
+    <div class="header-right">
+      <span class="user-info" id="userEmail"></span>
+      <button class="btn-logout" onclick="handleLogout()">ログアウト</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="steps">
+      <div class="step active" id="step1" onclick="goToStep(1)"><span class="step-num">1</span>PJ選択・送信先</div>
+      <div class="step" id="step2" onclick="goToStep(2)"><span class="step-num">2</span>メール作成</div>
+      <div class="step" id="step3" onclick="goToStep(3)"><span class="step-num">3</span>プレビュー・送信</div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div id="panel1">
+      <div class="card">
+        <div class="card-header">
+          <h2>PJ選択 &amp; 送信先選択</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="badge badge-primary" id="selectedCount">0件選択中</span>
+            <button class="btn btn-primary btn-sm" onclick="showBuyerMgmt()">📊 データ管理</button>
+          </div>
+        </div>
+        <div class="card-body">
+
+          <!-- PJ Panel -->
+          <div class="pj-panel">
+            <div class="pj-row">
+              <label style="font-size:13px;font-weight:700;color:var(--primary);white-space:nowrap;">📁 紹介するPJ</label>
+              <select id="pjSelect" class="pj-select" onchange="onPJChange()">
+                <option value="">-- PJを選択してください --</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="showNewPJModal()">＋ 新規PJ作成</button>
+            </div>
+            <div id="pjDetail" class="hidden">
+              <div class="pj-info" id="pjInfoBox"></div>
+              <div class="pj-upload" id="pjUploadArea">
+                <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px;">📎 ノンネームシート（PDF）</div>
+                <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                  <div class="upload-icon">📄</div>
+                  <div style="font-size:13px;font-weight:500;color:var(--gray-700);">クリックしてPDFを選択</div>
+                  <div style="font-size:11px;color:var(--gray-400);margin-top:3px;">またはドラッグ＆ドロップ</div>
+                </div>
+                <input type="file" id="fileInput" accept=".pdf" style="display:none" onchange="handleFileUpload(this)">
+                <div id="fileList"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="filter-bar">
+            <input type="text" id="searchInput" placeholder="🔍 企業名・名前で検索..." oninput="filterTable()">
+            <select id="industryFilter" onchange="filterTable()"><option value="">全業種</option></select>
+            <select id="sentFilter" onchange="filterTable()">
+              <option value="all">全員表示</option>
+              <option value="unsent">未送信のみ</option>
+              <option value="sent">送信済みのみ</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="selectAllVisible()">全選択</button>
+            <button class="btn btn-outline btn-sm" onclick="deselectAll()">全解除</button>
+          </div>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th class="cb-cell"><input type="checkbox" id="selectAllCb" onchange="toggleSelectAll(this)"></th>
+                  <th>No.</th>
+                  <th>企業名</th>
+                  <th>業種</th>
+                  <th>連絡方法</th>
+                  <th>名前</th>
+                  <th>役職</th>
+                  <th>メールアドレス</th>
+                  <th>送信状態</th>
+                </tr>
+              </thead>
+              <tbody id="buyerTableBody">
+                <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gray-400);">「📊 データ管理」からCSVをインポートするか、手動で買い手を追加してください</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="action-bar">
+            <div style="font-size:13px;color:var(--gray-500);">表示 <span id="visibleCount">0</span>件 / 全<span id="totalCount">0</span>件</div>
+            <button class="btn btn-primary" onclick="goToStep(2)" id="nextToStep2Btn" disabled>次へ：メール作成 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="panel2" class="hidden">
+      <div class="grid">
+        <div class="card">
+          <div class="card-header">
+            <h2>メール作成</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="badge badge-primary" id="selectedCount2">0件選択中</span>
+              <button class="btn btn-outline btn-sm" onclick="showTemplateMgmt()">📝 テンプレート管理</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>テンプレート選択</label>
+              <select class="template-select" id="templateSelect" onchange="applyTemplate()">
+                <option value="">-- テンプレートを選択 --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>件名</label>
+              <input type="text" id="emailSubject" placeholder="【案件ご紹介】〇〇業界 M&A案件のご案内">
+              <div class="help-text">{{企業名}} {{担当者名}} {{役職}} {{業種}} は送信時に自動置換されます</div>
+            </div>
+            <div class="form-group">
+              <label>本文</label>
+              <textarea id="emailBody" placeholder="メール本文を入力..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-header"><h2>送信者設定</h2></div>
+            <div class="card-body">
+              <div class="sender-info">ℹ️ <span id="senderEmail2"></span> から送信されます</div>
+              <div class="form-group">
+                <label>差出人表示名（任意）</label>
+                <input type="text" id="senderName" placeholder="例: 株式会社アイドマ・ホールディングス M&A戦略室">
+              </div>
+              <div class="form-group">
+                <label>送信間隔（秒）</label>
+                <input type="number" id="sendInterval" value="3" min="1" max="30" style="width:80px;">
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button class="btn btn-outline" onclick="goToStep(1)">← 戻る</button>
+            <button class="btn btn-primary" onclick="goToStep(3)">次へ：プレビュー →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div id="panel3" class="hidden">
+      <div class="grid">
+        <div class="card">
+          <div class="card-header">
+            <h2>メールプレビュー</h2>
+            <span class="badge badge-primary" id="selectedCount3">0件選択中</span>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>プレビュー対象</label>
+              <select id="previewTarget" onchange="updatePreview()" style="width:100%;padding:8px 12px;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:13px;"></select>
+            </div>
+            <div class="preview-box">
+              <div class="preview-subject" id="previewSubject"></div>
+              <div class="preview-body" id="previewBody"></div>
+              <div class="preview-attachment hidden" id="previewAttachment">📎 <span id="previewFileName"></span></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-header"><h2>送信先一覧</h2></div>
+            <div class="card-body">
+              <div style="max-height:220px;overflow-y:auto;">
+                <table>
+                  <thead><tr><th>企業名</th><th>名前</th><th>役職</th><th>メールアドレス</th></tr></thead>
+                  <tbody id="sendListBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2>送信実行</h2></div>
+            <div class="card-body">
+              <div class="sender-info" id="pjSendInfo"></div>
+              <div id="sendProgress" class="hidden">
+                <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+                <div class="send-status" id="sendStatusText">送信中...</div>
+                <div class="send-log" id="sendLog"></div>
+              </div>
+              <div class="action-bar">
+                <button class="btn btn-outline" onclick="goToStep(2)">← 戻る</button>
+                <button class="btn btn-danger btn-lg" id="sendBtn" onclick="confirmAndSend()">📨 一括送信する</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG & STATE
+// ============================================================
+const SCOPES = 'https://www.googleapis.com/auth/gmail.send';
+const LS = {
+  buyers:      'ma_buyers_v2',
+  templates:   'ma_templates_v2',
+  pjList:      'ma_pjList_v2',
+  sentHistory: 'ma_sentHistory_v2',
+};
+
+let state = {
+  buyers: [],
+  flatContacts: [],
+  filteredContacts: [],
+  selectedKeys: new Set(),
+  templates: [],
+  pjList: [],
+  selectedPJ: null,
+  attachedFile: null,
+  attachedFileBase64: null,
+  currentStep: 1,
+  isSignedIn: false,
+  userEmail: '',
+  sentHistory: [],
+  csvParsedBuyers: [],
+  editingTemplateIdx: null,
+};
+
+// ============================================================
+// CONFIG MANAGEMENT
+// ============================================================
+function getConfig() {
+  return { clientId: localStorage.getItem('ma_clientId') || '' };
+}
+function showSetup() {
+  document.getElementById('setupClientId').value = getConfig().clientId;
+  document.getElementById('setupModal').classList.remove('hidden');
+}
+function closeSetup() { document.getElementById('setupModal').classList.add('hidden'); }
+function saveSetup() {
+  localStorage.setItem('ma_clientId', document.getElementById('setupClientId').value.trim());
+  closeSetup();
+  showToast('設定を保存しました。再初期化中...', 'success');
+  tokenClient = null; gapiClientReady = false;
+  maybeInitAll().then(() => { if (tokenClient) showToast('初期化完了！ログインできます', 'success'); });
+}
+
+// ============================================================
+// GOOGLE API INIT (Gmail only)
+// ============================================================
+let gapiLoaded = false, gisLoaded = false, tokenClient = null, gapiClientReady = false;
+
+function loadGapi() {
+  const s1 = document.createElement('script');
+  s1.src = 'https://apis.google.com/js/api.js';
+  s1.onload = () => { gapi.load('client', () => { gapiLoaded = true; maybeInitAll(); }); };
+  document.body.appendChild(s1);
+  const s2 = document.createElement('script');
+  s2.src = 'https://accounts.google.com/gsi/client';
+  s2.onload = () => { gisLoaded = true; maybeInitAll(); };
+  document.body.appendChild(s2);
+}
+
+async function maybeInitAll() {
+  if (!gapiLoaded || !gisLoaded) return;
+  const config = getConfig();
+  if (!config.clientId) return;
+  try {
+    await gapi.client.init({
+      discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest']
+    });
+    gapiClientReady = true;
+  } catch(e) { showToast('API初期化エラー: ' + (e.message||e), 'error'); return; }
+  try {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: config.clientId, scope: SCOPES, callback: handleAuthCallback
+    });
+  } catch(e) { showToast('OAuth初期化エラー: ' + (e.message||e), 'error'); }
+}
+
+function handleAuthCallback(resp) {
+  if (resp.error) { showToast('認証エラー: ' + resp.error, 'error'); return; }
+  state.isSignedIn = true;
+  fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    headers: { Authorization: 'Bearer ' + gapi.client.getToken().access_token }
+  }).then(r => r.json()).then(info => {
+    state.userEmail = info.email || '';
+    document.getElementById('userEmail').textContent = state.userEmail;
+    document.getElementById('senderEmail2').textContent = state.userEmail;
+  });
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  loadAll();
+}
+
+function handleLogin() {
+  const c = getConfig();
+  if (!c.clientId) { showSetup(); showToast('先に初期設定（Client ID）を完了してください', 'info'); return; }
+  if (!tokenClient) {
+    showToast('APIを初期化しています...', 'info');
+    maybeInitAll().then(() => {
+      if (tokenClient) tokenClient.requestAccessToken();
+      else showToast('初期化失敗。設定を確認してページを再読み込みしてください', 'error');
+    });
+    return;
+  }
+  tokenClient.requestAccessToken();
+}
+
+function handleLogout() {
+  const t = gapi.client.getToken();
+  if (t) { google.accounts.oauth2.revoke(t.access_token); gapi.client.setToken(null); }
+  state.isSignedIn = false;
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+
+// ============================================================
+// LOCAL STORAGE DATA LAYER
+// ============================================================
+function loadAll() {
+  state.buyers      = JSON.parse(localStorage.getItem(LS.buyers)      || '[]');
+  state.templates   = JSON.parse(localStorage.getItem(LS.templates)   || '[]');
+  state.pjList      = JSON.parse(localStorage.getItem(LS.pjList)      || '[]');
+  state.sentHistory = JSON.parse(localStorage.getItem(LS.sentHistory) || '[]');
+
+  rebuildFlatContacts();
+  populateFilters();
+  filterTable();
+  renderPJSelect();
+  renderTemplateSelect();
+
+  const msg = state.buyers.length > 0
+    ? `${state.buyers.length}社（${state.flatContacts.length}名）を読み込みました`
+    : 'データが空です。「📊 データ管理」からCSVをインポートしてください';
+  showToast(msg, state.buyers.length > 0 ? 'success' : 'info');
+}
+
+function saveBuyers()      { localStorage.setItem(LS.buyers,      JSON.stringify(state.buyers)); }
+function saveTemplates()   { localStorage.setItem(LS.templates,   JSON.stringify(state.templates)); }
+function savePJList()      { localStorage.setItem(LS.pjList,      JSON.stringify(state.pjList)); }
+function saveSentHistory() { localStorage.setItem(LS.sentHistory, JSON.stringify(state.sentHistory)); }
+
+// ============================================================
+// BUYER DATA
+// ============================================================
+function rebuildFlatContacts() {
+  state.flatContacts = [];
+  for (const b of state.buyers) {
+    (b.contacts || []).forEach((c, idx) => {
+      state.flatContacts.push({
+        key: `${b.id}_${idx}`,
+        buyerId: b.id,
+        contactIdx: idx,
+        caseNo: b.caseNo || '',
+        companyName: b.companyName || '',
+        industry: b.industry || '',
+        contactMethod: b.contactMethod || '',
+        name: c.name || '',
+        role: c.role || '',
+        email: c.email || '',
+      });
+    });
+  }
+}
+
+// ============================================================
+// BUYER MANAGEMENT MODAL
+// ============================================================
+function showBuyerMgmt() {
+  renderBuyerStats();
+  renderBuyerList();
+  document.getElementById('buyerMgmtModal').classList.remove('hidden');
+}
+function closeBuyerMgmt() {
+  document.getElementById('buyerMgmtModal').classList.add('hidden');
+  cancelCsvImport();
+}
+
+function switchBuyerTab(name, btn) {
+  document.querySelectorAll('#buyerMgmtModal .tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#buyerMgmtModal .tab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`buyerTab-${name}`).classList.add('active');
+  if (name === 'list') renderBuyerList();
+}
+
+function renderBuyerStats() {
+  const companies = state.buyers.length;
+  const contacts  = state.flatContacts.length;
+  const withEmail = state.flatContacts.filter(c => c.email).length;
+  document.getElementById('buyerStats').innerHTML = `
+    <div class="stat-box"><div class="num">${companies}</div><div class="lbl">企業数</div></div>
+    <div class="stat-box"><div class="num">${contacts}</div><div class="lbl">連絡先数</div></div>
+    <div class="stat-box"><div class="num">${withEmail}</div><div class="lbl">メールあり</div></div>`;
+}
+
+function renderBuyerList() {
+  const q = (document.getElementById('buyerListSearch')?.value || '').toLowerCase();
+  const filtered = state.buyers.filter(b =>
+    !q || b.companyName.toLowerCase().includes(q) || (b.industry||'').toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('buyerListBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400);">データがありません</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(b => {
+    const c1 = (b.contacts||[])[0] || {};
+    return `<tr>
+      <td class="company-cell" title="${escHtml(b.companyName)}"><strong>${escHtml(b.companyName)}</strong></td>
+      <td>${escHtml(b.industry)}</td>
+      <td>${escHtml(b.caseNo)}</td>
+      <td>${escHtml(c1.name)}</td>
+      <td class="email-cell" title="${escHtml(c1.email)}">${escHtml(c1.email)}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-outline btn-sm" onclick="showEditBuyer('${b.id}')">編集</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteBuyer('${b.id}')">削除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+let editingBuyerId = null;
+function showEditBuyer(id) {
+  const b = state.buyers.find(b => b.id === id);
+  if (!b) return;
+  editingBuyerId = id;
+  document.getElementById('editCompanyName').value  = b.companyName || '';
+  document.getElementById('editIndustry').value     = b.industry || '';
+  document.getElementById('editCaseNo').value       = b.caseNo || '';
+  document.getElementById('editContactMethod').value= b.contactMethod || '';
+  for (let i = 1; i <= 3; i++) {
+    const c = (b.contacts || [])[i-1] || {};
+    document.getElementById(`editName${i}`).value  = c.name || '';
+    document.getElementById(`editRole${i}`).value  = c.role || '';
+    document.getElementById(`editEmail${i}`).value = c.email || '';
+  }
+  document.getElementById('editBuyerModal').classList.remove('hidden');
+}
+function closeEditBuyer() {
+  editingBuyerId = null;
+  document.getElementById('editBuyerModal').classList.add('hidden');
+}
+function saveEditBuyer() {
+  const companyName = document.getElementById('editCompanyName').value.trim();
+  if (!companyName) { showToast('企業名を入力してください', 'error'); return; }
+  const idx = state.buyers.findIndex(b => b.id === editingBuyerId);
+  if (idx === -1) return;
+  const contacts = [];
+  for (let i = 1; i <= 3; i++) {
+    const name  = document.getElementById(`editName${i}`).value.trim();
+    const role  = document.getElementById(`editRole${i}`).value.trim();
+    const email = document.getElementById(`editEmail${i}`).value.trim();
+    if (name || email) contacts.push({ name, role, email });
+  }
+  if (contacts.length === 0) contacts.push({ name: '', role: '', email: '' });
+  state.buyers[idx] = {
+    ...state.buyers[idx],
+    companyName,
+    industry:      document.getElementById('editIndustry').value.trim(),
+    caseNo:        document.getElementById('editCaseNo').value.trim(),
+    contactMethod: document.getElementById('editContactMethod').value.trim(),
+    contacts,
+  };
+  saveBuyers();
+  rebuildFlatContacts();
+  populateFilters();
+  filterTable();
+  renderBuyerStats();
+  renderBuyerList();
+  closeEditBuyer();
+  showToast(`${companyName} を更新しました`, 'success');
+}
+
+function deleteBuyer(id) {
+  if (!confirm('この企業を削除しますか？')) return;
+  state.buyers = state.buyers.filter(b => b.id !== id);
+  saveBuyers();
+  rebuildFlatContacts();
+  populateFilters();
+  filterTable();
+  renderBuyerStats();
+  renderBuyerList();
+  showToast('削除しました', 'success');
+}
+
+function clearAllBuyers() {
+  if (!confirm(`全${state.buyers.length}社のデータを削除します。よろしいですか？`)) return;
+  state.buyers = [];
+  saveBuyers();
+  rebuildFlatContacts();
+  populateFilters();
+  filterTable();
+  renderBuyerStats();
+  renderBuyerList();
+  showToast('全データを削除しました', 'success');
+}
+
+function addBuyerManually() {
+  const companyName = document.getElementById('addCompanyName').value.trim();
+  if (!companyName) { showToast('企業名を入力してください', 'error'); return; }
+  const contacts = [];
+  for (let i = 1; i <= 3; i++) {
+    const name  = document.getElementById(`addName${i}`).value.trim();
+    const role  = document.getElementById(`addRole${i}`).value.trim();
+    const email = document.getElementById(`addEmail${i}`).value.trim();
+    if (name || email) contacts.push({ name, role, email });
+  }
+  if (contacts.length === 0) contacts.push({ name: '', role: '', email: '' });
+  const buyer = {
+    id: 'b_' + Date.now() + '_' + Math.random().toString(36).substr(2,6),
+    caseNo: document.getElementById('addCaseNo').value.trim(),
+    companyName,
+    industry: document.getElementById('addIndustry').value.trim(),
+    contactMethod: document.getElementById('addContactMethod').value.trim(),
+    contacts,
+  };
+  state.buyers.push(buyer);
+  saveBuyers();
+  rebuildFlatContacts();
+  populateFilters();
+  filterTable();
+  // reset form
+  ['addCompanyName','addIndustry','addCaseNo','addContactMethod',
+   'addName1','addRole1','addEmail1','addName2','addRole2','addEmail2',
+   'addName3','addRole3','addEmail3'].forEach(id => { document.getElementById(id).value = ''; });
+  renderBuyerStats();
+  showToast(`${companyName} を追加しました`, 'success');
+}
+
+// ============================================================
+// CSV IMPORT
+// ============================================================
+function handleBuyerCsvFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => parseCsvForPreview(e.target.result);
+  reader.readAsText(file, 'UTF-8');
+  input.value = '';
+}
+
+function parseCsvForPreview(text) {
+  // BOM removal
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = parseCSVText(text);
+  if (rows.length < 2) { showToast('CSVのデータが不足しています', 'error'); return; }
+  // ヘッダーを正規化（セル内改行・前後スペース除去）して列番号を事前に特定
+  const headers = rows[0].map(h => h.replace(/[\r\n]+/g, '').trim());
+  // 部分一致も使って列番号を探すヘルパー
+  const findCol = (...terms) => {
+    for (const term of terms) {
+      const t = term.replace(/[\r\n]+/g, '').trim();
+      let idx = headers.indexOf(t);
+      if (idx !== -1) return idx;
+      idx = headers.findIndex(h => h.includes(t));
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+  const colCompany  = findCol('企業名');
+  const colIndustry = findCol('業種（大分類）', '業種(大分類)', '業種');
+  const colCaseNo   = findCol('案件No.', '案件No', '案件NO');
+  const colMethod   = findCol('案件紹介時の連絡方法', '連絡方法');
+  const colRole     = findCol('役職');
+  const colName     = findCol('名前');
+  const colEmail    = findCol('連絡先');
+  const col1Name    = findCol('連絡先1_名前');
+  const useNewFmt   = col1Name !== -1;
+  const gv = (row, idx) => (idx !== -1 && row[idx]) ? row[idx].trim() : '';
+
+  const buyers = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length === 0) continue;
+    const companyName = gv(row, colCompany);
+    if (!companyName) continue;
+    const contacts = [];
+    if (useNewFmt) {
+      for (let c = 1; c <= 3; c++) {
+        const nc = findCol(`連絡先${c}_名前`);
+        const rc = findCol(`連絡先${c}_役職`);
+        const ec = findCol(`連絡先${c}_メール`);
+        const name = gv(row, nc), role = gv(row, rc), email = gv(row, ec);
+        if (name || email) contacts.push({ name, role, email });
+      }
+    } else {
+      const name = gv(row, colName), role = gv(row, colRole), email = gv(row, colEmail);
+      if (name || email) contacts.push({ name, role, email });
+    }
+    if (contacts.length === 0) contacts.push({ name: '', role: '', email: '' });
+    buyers.push({
+      id: 'b_' + Date.now() + '_' + i + '_' + Math.random().toString(36).substr(2,4),
+      caseNo:        gv(row, colCaseNo),
+      companyName,
+      industry:      gv(row, colIndustry),
+      contactMethod: gv(row, colMethod),
+      contacts,
+    });
+  }
+  if (buyers.length === 0) { showToast('インポートできるデータが見つかりませんでした', 'error'); return; }
+  state.csvParsedBuyers = buyers;
+  showCsvPreview(headers, rows.slice(1, 6));
+  document.getElementById('csvPreviewInfo').textContent = `${buyers.length}件のデータを検出しました（現在登録数: ${state.buyers.length}社）`;
+}
+
+function showCsvPreview(headers, previewRows) {
+  const dispCols = ['企業名','業種','案件No','連絡先1_名前','連絡先1_メール'];
+  const colIdxs  = dispCols.map(c => headers.indexOf(c));
+  document.getElementById('csvPreviewHead').innerHTML =
+    '<tr>' + dispCols.map(c => `<th>${escHtml(c)}</th>`).join('') + '</tr>';
+  document.getElementById('csvPreviewBody').innerHTML = previewRows
+    .filter(r => r && r.length > 0)
+    .map(r => '<tr>' + colIdxs.map(i => `<td>${escHtml(i >= 0 ? (r[i]||'') : '')}</td>`).join('') + '</tr>')
+    .join('');
+  document.getElementById('csvPreviewArea').classList.remove('hidden');
+  document.getElementById('buyerCsvArea').classList.add('has-file');
+}
+
+function importCsvBuyers(mode) {
+  if (state.csvParsedBuyers.length === 0) return;
+  if (mode === 'overwrite') {
+    state.buyers = state.csvParsedBuyers;
+  } else {
+    state.buyers = [...state.buyers, ...state.csvParsedBuyers];
+  }
+  saveBuyers();
+  rebuildFlatContacts();
+  populateFilters();
+  filterTable();
+  renderBuyerStats();
+  renderBuyerList();
+  cancelCsvImport();
+  showToast(`${state.csvParsedBuyers.length}件をインポートしました（合計${state.buyers.length}社）`, 'success');
+  state.csvParsedBuyers = [];
+}
+
+function cancelCsvImport() {
+  document.getElementById('csvPreviewArea').classList.add('hidden');
+  document.getElementById('buyerCsvArea').classList.remove('has-file');
+  state.csvParsedBuyers = [];
+}
+
+function exportBuyersCsv() {
+  if (state.buyers.length === 0) { showToast('エクスポートするデータがありません', 'error'); return; }
+  const headers = ['企業名','業種','案件No','連絡方法',
+    '連絡先1_名前','連絡先1_役職','連絡先1_メール',
+    '連絡先2_名前','連絡先2_役職','連絡先2_メール',
+    '連絡先3_名前','連絡先3_役職','連絡先3_メール'];
+  const rows = [headers];
+  for (const b of state.buyers) {
+    const cs = b.contacts || [];
+    rows.push([
+      b.companyName, b.industry, b.caseNo, b.contactMethod,
+      (cs[0]||{}).name||'', (cs[0]||{}).role||'', (cs[0]||{}).email||'',
+      (cs[1]||{}).name||'', (cs[1]||{}).role||'', (cs[1]||{}).email||'',
+      (cs[2]||{}).name||'', (cs[2]||{}).role||'', (cs[2]||{}).email||'',
+    ]);
+  }
+  const csvText = '\uFEFF' + rows.map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `buyers_export_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// CSV drag-drop for buyer import
+document.addEventListener('DOMContentLoaded', () => {
+  const area = document.getElementById('buyerCsvArea');
+  if (area) {
+    ['dragenter','dragover','dragleave','drop'].forEach(e => area.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); }));
+    area.addEventListener('dragover', () => area.classList.add('drag-over'));
+    area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+    area.addEventListener('drop', e => {
+      area.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = ev => parseCsvForPreview(ev.target.result);
+        reader.readAsText(file, 'UTF-8');
+      }
+    });
+  }
+});
+
+// ============================================================
+// CSV PARSER
+// ============================================================
+function parseCSVText(text) {
+  const lines = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      if (inQ && text[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if ((ch === '\n' || ch === '\r') && !inQ) {
+      if (ch === '\r' && text[i+1] === '\n') i++;
+      lines.push(cur);
+      cur = '';
+    } else { cur += ch; }
+  }
+  if (cur) lines.push(cur);
+  return lines.filter(l => l.trim()).map(line => {
+    const fields = [];
+    let field = '', inQF = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQF && line[i+1] === '"') { field += '"'; i++; }
+        else inQF = !inQF;
+      } else if (ch === ',' && !inQF) { fields.push(field); field = ''; }
+      else { field += ch; }
+    }
+    fields.push(field);
+    return fields;
+  });
+}
+
+// ============================================================
+// PJ MANAGEMENT
+// ============================================================
+function renderPJSelect() {
+  const sel = document.getElementById('pjSelect');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">-- PJを選択してください --</option>' +
+    state.pjList.map(p => `<option value="${escHtml(p.pjId)}">${escHtml(p.pjId)} - ${escHtml(p.pjName)}</option>`).join('');
+  if (current) sel.value = current;
+}
+
+function onPJChange() {
+  const pjId = document.getElementById('pjSelect').value;
+  state.selectedPJ = state.pjList.find(p => p.pjId === pjId) || null;
+  const detail = document.getElementById('pjDetail');
+  if (state.selectedPJ) {
+    detail.classList.remove('hidden');
+    document.getElementById('pjInfoBox').innerHTML =
+      `<span class="pj-num">${escHtml(state.selectedPJ.pjId)}</span>` +
+      `<span style="font-weight:600;">${escHtml(state.selectedPJ.pjName)}</span>` +
+      (state.selectedPJ.industry ? `<span class="badge badge-primary">${escHtml(state.selectedPJ.industry)}</span>` : '') +
+      (state.selectedPJ.desc ? `<span style="color:var(--gray-500);font-size:12px;">${escHtml(state.selectedPJ.desc)}</span>` : '');
+    document.getElementById('pjSendInfo').innerHTML =
+      `📁 PJ: <b>${escHtml(state.selectedPJ.pjId)} ${escHtml(state.selectedPJ.pjName)}</b> を送信します`;
+  } else {
+    detail.classList.add('hidden');
+  }
+  filterTable();
+}
+
+function showNewPJModal() {
+  const nums = state.pjList.map(p => parseInt((p.pjId.match(/\d+/) || ['0'])[0])).filter(n => !isNaN(n));
+  const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  document.getElementById('newPJNum').value = `PJ-${String(next).padStart(3,'0')}`;
+  ['newPJName','newPJIndustry','newPJDesc'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('newPJModal').classList.remove('hidden');
+}
+function closeNewPJModal() { document.getElementById('newPJModal').classList.add('hidden'); }
+
+function saveNewPJ() {
+  const pjId   = document.getElementById('newPJNum').value.trim();
+  const pjName = document.getElementById('newPJName').value.trim();
+  const ind    = document.getElementById('newPJIndustry').value.trim();
+  const desc   = document.getElementById('newPJDesc').value.trim();
+  if (!pjId)   { showToast('PJ番号を入力してください', 'error'); return; }
+  if (!pjName) { showToast('案件名を入力してください', 'error'); return; }
+  const now = new Date().toLocaleDateString('ja-JP');
+  state.pjList.push({ pjId, pjName, industry: ind, desc, date: now });
+  savePJList();
+  renderPJSelect();
+  document.getElementById('pjSelect').value = pjId;
+  onPJChange();
+  closeNewPJModal();
+  showToast(`${pjId} を作成しました`, 'success');
+}
+
+// ============================================================
+// SENT HISTORY
+// ============================================================
+function recordSentHistory(recipients, pj) {
+  if (!pj) return;
+  const now = new Date().toLocaleString('ja-JP');
+  recipients.forEach(c => state.sentHistory.push({
+    date: now, pjId: pj.pjId, pjName: pj.pjName,
+    companyName: c.companyName, email: c.email
+  }));
+  saveSentHistory();
+}
+
+function isSentToDeal(email) {
+  if (!email || !state.selectedPJ) return false;
+  return state.sentHistory.some(h =>
+    h.pjId === state.selectedPJ.pjId &&
+    h.email.toLowerCase() === email.toLowerCase()
+  );
+}
+
+// ============================================================
+// TEMPLATES
+// ============================================================
+function renderTemplateSelect() {
+  const sel = document.getElementById('templateSelect');
+  sel.innerHTML = '<option value="">-- テンプレートを選択 --</option>' +
+    state.templates.map((t, i) => `<option value="${i}">${escHtml(t.no)} ${escHtml(t.timing)}</option>`).join('');
+}
+
+function applyTemplate() {
+  const idx = document.getElementById('templateSelect').value;
+  if (idx === '') return;
+  const t = state.templates[parseInt(idx)];
+  if (!t) return;
+  let subj = t.subject, body = t.body;
+  subj = subj.replace(/[〇○]{1,2}業界/g,'{{業種}}').replace(/[〇○]{2}/g,'{{業種}}');
+  body = body.replace(/[〇○]{2}株式会社/g,'{{企業名}}').replace(/○○株式会社/g,'{{企業名}}');
+  body = body.replace(/[〇○]{2}様/g,'{{担当者名}}様').replace(/○○様/g,'{{担当者名}}様');
+  body = body.replace(/[〇○]{1,2}業界/g,'{{業種}}');
+  document.getElementById('emailSubject').value = subj;
+  document.getElementById('emailBody').value = body;
+  showToast('テンプレートを適用しました', 'success');
+}
+
+// ============================================================
+// TEMPLATE MANAGEMENT MODAL
+// ============================================================
+function showTemplateMgmt() {
+  renderTemplateMgmtTable();
+  document.getElementById('templateMgmtModal').classList.remove('hidden');
+}
+function closeTemplateMgmt() {
+  document.getElementById('templateMgmtModal').classList.add('hidden');
+  cancelTemplateEdit();
+}
+
+function renderTemplateMgmtTable() {
+  document.getElementById('tmplCount').textContent = `${state.templates.length}件`;
+  const tbody = document.getElementById('templateMgmtBody');
+  if (state.templates.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray-400);">テンプレートがありません。「新規追加」から登録してください。</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.templates.map((t, i) => `
+    <tr>
+      <td style="width:50px;">${escHtml(t.no)}</td>
+      <td>${escHtml(t.timing)}</td>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(t.subject)}">${escHtml(t.subject)}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="editTemplate(${i})">編集</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteTemplate(${i})">削除</button>
+      </td>
+    </tr>`).join('');
+}
+
+function showTemplateAdd() {
+  state.editingTemplateIdx = null;
+  document.getElementById('templateEditTitle').textContent = '新規テンプレート';
+  document.getElementById('tmplNo').value = String(state.templates.length + 1);
+  ['tmplTiming','tmplSubject','tmplBody'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('templateEditArea').classList.remove('hidden');
+}
+
+function editTemplate(idx) {
+  const t = state.templates[idx];
+  state.editingTemplateIdx = idx;
+  document.getElementById('templateEditTitle').textContent = 'テンプレート編集';
+  document.getElementById('tmplNo').value      = t.no;
+  document.getElementById('tmplTiming').value  = t.timing;
+  document.getElementById('tmplSubject').value = t.subject;
+  document.getElementById('tmplBody').value    = t.body;
+  document.getElementById('templateEditArea').classList.remove('hidden');
+}
+
+function saveTemplateEdit() {
+  const t = {
+    no:      document.getElementById('tmplNo').value.trim(),
+    timing:  document.getElementById('tmplTiming').value.trim(),
+    subject: document.getElementById('tmplSubject').value.trim(),
+    body:    document.getElementById('tmplBody').value,
+  };
+  if (!t.subject) { showToast('件名を入力してください', 'error'); return; }
+  if (state.editingTemplateIdx !== null) {
+    state.templates[state.editingTemplateIdx] = t;
+  } else {
+    state.templates.push(t);
+  }
+  saveTemplates();
+  renderTemplateSelect();
+  renderTemplateMgmtTable();
+  cancelTemplateEdit();
+  showToast('テンプレートを保存しました', 'success');
+}
+
+function cancelTemplateEdit() {
+  state.editingTemplateIdx = null;
+  document.getElementById('templateEditArea').classList.add('hidden');
+}
+
+function deleteTemplate(idx) {
+  if (!confirm('このテンプレートを削除しますか？')) return;
+  state.templates.splice(idx, 1);
+  saveTemplates();
+  renderTemplateSelect();
+  renderTemplateMgmtTable();
+  showToast('削除しました', 'success');
+}
+
+// ============================================================
+// TABLE
+// ============================================================
+function populateFilters() {
+  const industries = [...new Set(state.buyers.map(b => b.industry).filter(Boolean))].sort();
+  const sel = document.getElementById('industryFilter');
+  sel.innerHTML = '<option value="">全業種</option>' +
+    industries.map(i => `<option value="${escHtml(i)}">${escHtml(i)}</option>`).join('');
+}
+
+function filterTable() {
+  const search     = document.getElementById('searchInput').value.toLowerCase();
+  const industry   = document.getElementById('industryFilter').value;
+  const sentFilter = document.getElementById('sentFilter').value;
+
+  state.filteredContacts = state.flatContacts.filter(c => {
+    if (search && !c.companyName.toLowerCase().includes(search) && !c.name.toLowerCase().includes(search)) return false;
+    if (industry && c.industry !== industry) return false;
+    if (sentFilter === 'unsent' && isSentToDeal(c.email)) return false;
+    if (sentFilter === 'sent'   && !isSentToDeal(c.email)) return false;
+    return true;
+  });
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('buyerTableBody');
+  if (state.flatContacts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gray-400);">「📊 データ管理」からCSVをインポートするか、手動で買い手を追加してください</td></tr>';
+  } else if (state.filteredContacts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gray-400);">該当する候補が見つかりません</td></tr>';
+  } else {
+    tbody.innerHTML = state.filteredContacts.map(c => {
+      const sent = isSentToDeal(c.email);
+      const isSelected = state.selectedKeys.has(c.key);
+      const rowClass = isSelected ? 'selected' : (sent ? 'sent-row' : '');
+      const sentBadge = !state.selectedPJ ? '' :
+        sent ? '<span class="badge badge-sent">送信済</span>'
+             : '<span class="badge badge-unsent">未送信</span>';
+      return `<tr class="${rowClass}" onclick="toggleRow('${c.key}',event)">
+        <td class="cb-cell"><input type="checkbox" ${isSelected?'checked':''} onchange="toggleSelect('${c.key}')" onclick="event.stopPropagation()"></td>
+        <td>${escHtml(c.caseNo)}</td>
+        <td class="company-cell" title="${escHtml(c.companyName)}"><strong>${escHtml(c.companyName)}</strong></td>
+        <td>${escHtml(c.industry)}</td>
+        <td>${c.contactMethod ? `<span class="badge badge-success">${escHtml(c.contactMethod)}</span>` : '<span style="color:var(--gray-400);font-size:12px;">未設定</span>'}</td>
+        <td>${escHtml(c.name)}</td>
+        <td>${escHtml(c.role)}</td>
+        <td class="email-cell" title="${escHtml(c.email)}">${c.email || '<span style="color:var(--gray-400)">未登録</span>'}</td>
+        <td>${sentBadge}</td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('visibleCount').textContent = state.filteredContacts.length;
+  document.getElementById('totalCount').textContent = state.flatContacts.length;
+  updateSelectedCount();
+}
+
+function toggleRow(key, event) {
+  if (event.target.tagName === 'INPUT') return;
+  toggleSelect(key);
+}
+function toggleSelect(key) {
+  if (state.selectedKeys.has(key)) {
+    state.selectedKeys.delete(key);
+  } else {
+    const contact = state.flatContacts.find(c => c.key === key);
+    if (!contact || !contact.email) { showToast('メールアドレスが未登録のため選択できません', 'error'); return; }
+    state.selectedKeys.add(key);
+  }
+  renderTable();
+}
+function toggleSelectAll(cb) { cb.checked ? selectAllVisible() : deselectAll(); }
+function selectAllVisible() {
+  state.filteredContacts.forEach(c => { if (c.email) state.selectedKeys.add(c.key); });
+  renderTable();
+}
+function deselectAll() {
+  state.selectedKeys.clear();
+  document.getElementById('selectAllCb').checked = false;
+  renderTable();
+}
+function updateSelectedCount() {
+  const n = state.selectedKeys.size;
+  const t = `${n}件選択中`;
+  ['selectedCount','selectedCount2','selectedCount3'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = t;
+  });
+  document.getElementById('nextToStep2Btn').disabled = n === 0;
+}
+function getSelectedContacts() {
+  return [...state.selectedKeys].map(key => state.flatContacts.find(c => c.key === key)).filter(Boolean);
+}
+
+// ============================================================
+// FILE UPLOAD (PDF attachment)
+// ============================================================
+function handleFileUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.type !== 'application/pdf') { showToast('PDFファイルのみ可', 'error'); input.value=''; return; }
+  state.attachedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => { state.attachedFileBase64 = e.target.result.split(',')[1]; };
+  reader.readAsDataURL(file);
+  document.getElementById('uploadArea').classList.add('has-file');
+  document.getElementById('fileList').innerHTML = `
+    <div class="file-info">
+      <span>📄</span>
+      <span class="name">${escHtml(file.name)}</span>
+      <span class="size">${formatFileSize(file.size)}</span>
+      <span class="remove" onclick="removeFile()">✕</span>
+    </div>`;
+}
+function removeFile() {
+  state.attachedFile = null; state.attachedFileBase64 = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('uploadArea').classList.remove('has-file');
+  document.getElementById('fileList').innerHTML = '';
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const area = document.getElementById('uploadArea');
+  if (!area) return;
+  ['dragenter','dragover','dragleave','drop'].forEach(e => area.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); }));
+  area.addEventListener('dragover', () => area.classList.add('drag-over'));
+  area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+  area.addEventListener('drop', e => {
+    area.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) { const inp = document.getElementById('fileInput'); const dt = new DataTransfer(); dt.items.add(file); inp.files = dt.files; handleFileUpload(inp); }
+  });
+});
+
+// ============================================================
+// STEP NAVIGATION
+// ============================================================
+function goToStep(n) {
+  if (n === 2 && state.selectedKeys.size === 0) { showToast('送信先を1件以上選択してください', 'error'); return; }
+  if (n === 3) {
+    if (!document.getElementById('emailSubject').value.trim() || !document.getElementById('emailBody').value.trim()) {
+      showToast('件名と本文を入力してください', 'error'); return;
+    }
+    preparePreview();
+  }
+  state.currentStep = n;
+  [1,2,3].forEach(i => {
+    document.getElementById(`panel${i}`).classList.toggle('hidden', i !== n);
+    const s = document.getElementById(`step${i}`);
+    s.classList.remove('active','completed');
+    if (i < n) s.classList.add('completed');
+    if (i === n) s.classList.add('active');
+  });
+  window.scrollTo(0, 0);
+}
+
+// ============================================================
+// PREVIEW
+// ============================================================
+function preparePreview() {
+  const selected = getSelectedContacts();
+  document.getElementById('previewTarget').innerHTML = selected.map((c,i) =>
+    `<option value="${i}">${escHtml(c.companyName)} - ${escHtml(c.name||c.email)}</option>`
+  ).join('');
+  document.getElementById('sendListBody').innerHTML = selected.map(c => `
+    <tr>
+      <td>${escHtml(c.companyName)}</td>
+      <td>${escHtml(c.name)}</td>
+      <td>${escHtml(c.role)}</td>
+      <td style="font-family:monospace;font-size:12px;">${escHtml(c.email)}</td>
+    </tr>`).join('');
+  updatePreview();
+}
+function updatePreview() {
+  const selected = getSelectedContacts();
+  const idx = parseInt(document.getElementById('previewTarget').value) || 0;
+  const c = selected[idx];
+  if (!c) return;
+  document.getElementById('previewSubject').textContent = replacePlaceholders(document.getElementById('emailSubject').value, c);
+  document.getElementById('previewBody').textContent    = replacePlaceholders(document.getElementById('emailBody').value, c);
+  if (state.attachedFile) {
+    document.getElementById('previewAttachment').classList.remove('hidden');
+    document.getElementById('previewFileName').textContent = state.attachedFile.name;
+  } else {
+    document.getElementById('previewAttachment').classList.add('hidden');
+  }
+}
+function replacePlaceholders(text, c) {
+  return text
+    .replace(/\{\{企業名\}\}/g,   c.companyName)
+    .replace(/\{\{担当者名\}\}/g, c.name)
+    .replace(/\{\{役職\}\}/g,     c.role)
+    .replace(/\{\{業種\}\}/g,     c.industry);
+}
+
+// ============================================================
+// SEND
+// ============================================================
+function confirmAndSend() {
+  const selected = getSelectedContacts();
+  if (selected.length === 0) return;
+  if (!state.selectedPJ) {
+    if (!confirm(`⚠️ PJが未選択のため送信履歴が記録されません。\nこのまま${selected.length}件送信しますか？`)) return;
+  } else {
+    const alreadySent = selected.filter(c => isSentToDeal(c.email));
+    let msg = `${state.selectedPJ.pjId} を ${selected.length}件に送信します。よろしいですか？`;
+    if (alreadySent.length > 0) {
+      msg = `⚠️ 以下${alreadySent.length}件は「${state.selectedPJ.pjId}」を送信済みです：\n`
+        + alreadySent.map(c => `・${c.companyName}（${c.name}）`).join('\n')
+        + `\n\nこのまま全${selected.length}件に送信しますか？`;
+    }
+    if (!confirm(msg)) return;
+  }
+  sendEmails(selected);
+}
+
+async function sendEmails(recipients) {
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.disabled = true; sendBtn.textContent = '送信中...';
+  document.getElementById('sendProgress').classList.remove('hidden');
+  document.getElementById('sendLog').innerHTML = '';
+
+  const subject    = document.getElementById('emailSubject').value;
+  const body       = document.getElementById('emailBody').value;
+  const senderName = document.getElementById('senderName').value.trim();
+  const interval   = parseInt(document.getElementById('sendInterval').value) || 3;
+
+  let successCount = 0, errorCount = 0;
+  const successList = [];
+
+  for (let i = 0; i < recipients.length; i++) {
+    const c = recipients[i];
+    document.getElementById('progressFill').style.width = ((i+1)/recipients.length*100).toFixed(0) + '%';
+    document.getElementById('sendStatusText').textContent = `送信中... ${i+1} / ${recipients.length}`;
+    try {
+      await sendSingleEmail(c.email, replacePlaceholders(subject,c), replacePlaceholders(body,c), senderName);
+      successCount++; successList.push(c);
+      addLog(`✅ ${c.companyName} ${c.name} (${c.email})`, 'success');
+    } catch(e) {
+      errorCount++;
+      addLog(`❌ ${c.companyName} ${c.name} - エラー: ${e.message||e}`, 'error');
+    }
+    if (i < recipients.length - 1) await sleep(interval * 1000);
+  }
+
+  if (successList.length > 0 && state.selectedPJ) {
+    recordSentHistory(successList, state.selectedPJ);
+    addLog(`📝 ${successList.length}件の履歴を記録しました`, 'success');
+    filterTable();
+  } else if (successList.length > 0 && !state.selectedPJ) {
+    addLog(`⚠️ PJ未選択のため送信履歴は記録されませんでした`, 'error');
+  }
+
+  document.getElementById('sendStatusText').textContent = `送信完了: 成功${successCount}件 / エラー${errorCount}件`;
+  sendBtn.disabled = false; sendBtn.textContent = '📨 一括送信する';
+  showToast(errorCount === 0 ? `${successCount}件を送信しました` : `成功${successCount} / エラー${errorCount}`, errorCount === 0 ? 'success' : 'error');
+}
+
+async function sendSingleEmail(to, subject, bodyText, senderName) {
+  const from = senderName ? `${senderName} <${state.userEmail}>` : state.userEmail;
+  const makeRaw = (parts) => {
+    const raw = parts.join('\r\n');
+    return btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  };
+  let raw;
+  if (state.attachedFile && state.attachedFileBase64) {
+    const b = 'boundary_' + Date.now();
+    raw = makeRaw([
+      `From: ${from}`, `To: ${to}`,
+      `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
+      'MIME-Version: 1.0', `Content-Type: multipart/mixed; boundary="${b}"`, '',
+      `--${b}`, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '',
+      btoa(unescape(encodeURIComponent(bodyText))), '',
+      `--${b}`, `Content-Type: application/pdf; name="${state.attachedFile.name}"`,
+      'Content-Transfer-Encoding: base64', `Content-Disposition: attachment; filename="${state.attachedFile.name}"`, '',
+      state.attachedFileBase64, '', `--${b}--`
+    ]);
+  } else {
+    raw = makeRaw([
+      `From: ${from}`, `To: ${to}`,
+      `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
+      'MIME-Version: 1.0', 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '',
+      btoa(unescape(encodeURIComponent(bodyText)))
+    ]);
+  }
+  return await gapi.client.gmail.users.messages.send({ userId: 'me', resource: { raw } });
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function escHtml(s) {
+  if (!s) return '';
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+function formatFileSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function showToast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast toast-${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+function addLog(msg, type) {
+  const d = document.getElementById('sendLog');
+  const e = document.createElement('div');
+  e.className = `log-entry ${type}`;
+  e.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  d.appendChild(e); d.scrollTop = d.scrollHeight;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+if (window.location.protocol === 'file:') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const w = document.createElement('div');
+    w.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:white;padding:12px 20px;text-align:center;z-index:9999;font-size:13px;font-weight:500;';
+    w.innerHTML = '⚠️ <code>file://</code> では動作しません。同じフォルダの <strong>「メール配信アプリ起動.bat」</strong> をダブルクリックして起動してください。';
+    document.body.prepend(w);
+  });
+} else {
+  loadGapi();
+}
+</script>
+</body>
+</html>
