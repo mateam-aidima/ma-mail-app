@@ -76,6 +76,15 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
 .badge-sent { background: #fee2e2; color: #dc2626; }
 .badge-unsent { background: #dcfce7; color: #16a34a; }
 .badge-warning { background: #fef3c7; color: #b45309; }
+.badge-mail { background:#dbeafe; color:#1d4ed8; }
+.badge-chatwork { background:#dcfce7; color:#15803d; }
+.badge-line { background:#bbf7d0; color:#065f46; }
+.badge-tel { background:#fef3c7; color:#b45309; }
+.badge-slack { background:#ede9fe; color:#6d28d9; }
+.badge-zoom { background:#e0f2fe; color:#0369a1; }
+.badge-teams { background:#dbeafe; color:#1e40af; }
+.badge-method-other { background:#f3f4f6; color:#4b5563; }
+.contact-row { border:1px solid var(--gray-200); border-radius:var(--radius); padding:10px 12px; margin-bottom:8px; background:var(--gray-50); position:relative; }
 /* Filter bar */
 .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
 .filter-bar input, .filter-bar select { padding: 7px 10px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 13px; background: white; }
@@ -291,34 +300,12 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
           <div class="form-group" style="flex:1;"><label>業種</label><input type="text" id="addIndustry" placeholder="例：製造業"></div>
           <div class="form-group" style="flex:1;"><label>案件No</label><input type="text" id="addCaseNo" placeholder="例：A-001"></div>
         </div>
-        <div class="form-group"><label>連絡方法</label><input type="text" id="addContactMethod" placeholder="例：メール"></div>
-        <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">連絡先（最大3件）</div>
-        <div id="addContactsArea">
-          <div class="inline-form" style="margin-bottom:8px;">
-            <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px;">連絡先1</div>
-            <div class="row">
-              <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="addName1" placeholder="山田 太郎"></div>
-              <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="addRole1" placeholder="代表取締役"></div>
-              <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="addEmail1" placeholder="taro@example.com"></div>
-            </div>
-          </div>
-          <div class="inline-form" style="margin-bottom:8px;">
-            <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px;">連絡先2（任意）</div>
-            <div class="row">
-              <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="addName2" placeholder=""></div>
-              <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="addRole2" placeholder=""></div>
-              <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="addEmail2" placeholder=""></div>
-            </div>
-          </div>
-          <div class="inline-form" style="margin-bottom:8px;">
-            <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px;">連絡先3（任意）</div>
-            <div class="row">
-              <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="addName3" placeholder=""></div>
-              <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="addRole3" placeholder=""></div>
-              <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="addEmail3" placeholder=""></div>
-            </div>
-          </div>
+        <div class="form-group"><label>連絡方法</label><select id="addContactMethod"></select></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600;color:var(--gray-700);">連絡先</div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addContactRow('addContactsArea')">＋ 連絡先を追加</button>
         </div>
+        <div id="addContactsArea"></div>
         <button class="btn btn-primary" onclick="addBuyerManually()">➕ 追加する</button>
       </div>
     </div>
@@ -379,32 +366,12 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
         <div class="form-group" style="flex:1;"><label>業種</label><input type="text" id="editIndustry"></div>
         <div class="form-group" style="flex:1;"><label>案件No</label><input type="text" id="editCaseNo"></div>
       </div>
-      <div class="form-group"><label>連絡方法</label><input type="text" id="editContactMethod"></div>
-      <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">連絡先（最大3件）</div>
-      <div class="inline-form" style="margin-bottom:8px;">
-        <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px;">連絡先1</div>
-        <div class="row">
-          <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="editName1"></div>
-          <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="editRole1"></div>
-          <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="editEmail1"></div>
-        </div>
+      <div class="form-group"><label>連絡方法</label><select id="editContactMethod"></select></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-700);">連絡先</div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="addContactRow('editContactsArea')">＋ 連絡先を追加</button>
       </div>
-      <div class="inline-form" style="margin-bottom:8px;">
-        <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px;">連絡先2（任意）</div>
-        <div class="row">
-          <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="editName2"></div>
-          <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="editRole2"></div>
-          <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="editEmail2"></div>
-        </div>
-      </div>
-      <div class="inline-form" style="margin-bottom:8px;">
-        <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px;">連絡先3（任意）</div>
-        <div class="row">
-          <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" id="editName3"></div>
-          <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" id="editRole3"></div>
-          <div class="form-group" style="flex:2;min-width:180px;"><label style="font-size:11px;">メールアドレス</label><input type="email" id="editEmail3"></div>
-        </div>
-      </div>
+      <div id="editContactsArea"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeEditBuyer()">キャンセル</button>
@@ -840,21 +807,101 @@ function renderBuyerList() {
   }).join('');
 }
 
+// ============================================================
+// CONTACT METHOD CONFIG
+// ============================================================
+const CONTACT_METHODS = [
+  { value: '',          label: '未設定',    cls: 'method-other' },
+  { value: 'メール',    label: 'メール',    cls: 'mail' },
+  { value: 'ChatWork',  label: 'ChatWork',  cls: 'chatwork' },
+  { value: 'LINE',      label: 'LINE',      cls: 'line' },
+  { value: '電話',      label: '電話',      cls: 'tel' },
+  { value: 'Slack',     label: 'Slack',     cls: 'slack' },
+  { value: 'Zoom',      label: 'Zoom',      cls: 'zoom' },
+  { value: 'Teams',     label: 'Teams',     cls: 'teams' },
+  { value: 'その他',    label: 'その他',    cls: 'method-other' },
+];
+
+function methodBadgeHtml(method) {
+  if (!method) return '<span style="color:var(--gray-400);font-size:12px;">未設定</span>';
+  const m = CONTACT_METHODS.find(x => x.value === method);
+  const cls = m ? m.cls : 'method-other';
+  return `<span class="badge badge-${cls}">${escHtml(method)}</span>`;
+}
+
+function populateMethodSelect(selectEl, currentValue) {
+  selectEl.innerHTML = CONTACT_METHODS.map(m =>
+    `<option value="${escHtml(m.value)}" ${m.value === currentValue ? 'selected' : ''}>${escHtml(m.label)}</option>`
+  ).join('');
+}
+
+function addContactRow(areaId, contact) {
+  const area = document.getElementById(areaId);
+  const n = area.children.length + 1;
+  const c = contact || { name: '', role: '', email: '' };
+  const row = document.createElement('div');
+  row.className = 'contact-row';
+  row.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="font-size:12px;font-weight:600;color:var(--primary);">連絡先 ${n}</span>
+      <button type="button" class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:11px;" onclick="removeContactRow(this)">✕ 削除</button>
+    </div>
+    <div class="row">
+      <div class="form-group"><label style="font-size:11px;">名前</label><input type="text" class="c-name" value="${escHtml(c.name)}" placeholder="山田 太郎"></div>
+      <div class="form-group"><label style="font-size:11px;">役職</label><input type="text" class="c-role" value="${escHtml(c.role)}" placeholder="代表取締役"></div>
+      <div class="form-group" style="flex:2;min-width:160px;"><label style="font-size:11px;">メールアドレス</label><input type="email" class="c-email" value="${escHtml(c.email)}" placeholder="taro@example.com"></div>
+    </div>`;
+  area.appendChild(row);
+  renumberContactRows(area);
+}
+
+function removeContactRow(btn) {
+  const row = btn.closest('.contact-row');
+  const area = row.parentElement;
+  row.remove();
+  renumberContactRows(area);
+}
+
+function renumberContactRows(area) {
+  area.querySelectorAll('.contact-row').forEach((row, i) => {
+    const label = row.querySelector('span');
+    if (label) label.textContent = `連絡先 ${i + 1}`;
+  });
+}
+
+function getContactsFromArea(areaId) {
+  const contacts = [];
+  document.querySelectorAll(`#${areaId} .contact-row`).forEach(row => {
+    const name  = (row.querySelector('.c-name')?.value  || '').trim();
+    const role  = (row.querySelector('.c-role')?.value  || '').trim();
+    const email = (row.querySelector('.c-email')?.value || '').trim();
+    if (name || email) contacts.push({ name, role, email });
+  });
+  return contacts;
+}
+
+// Initialize contact method selects and default add contact row on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  ['addContactMethod','editContactMethod'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) populateMethodSelect(el, '');
+  });
+  addContactRow('addContactsArea');
+});
+
 let editingBuyerId = null;
 function showEditBuyer(id) {
   const b = state.buyers.find(b => b.id === id);
   if (!b) return;
   editingBuyerId = id;
-  document.getElementById('editCompanyName').value  = b.companyName || '';
-  document.getElementById('editIndustry').value     = b.industry || '';
-  document.getElementById('editCaseNo').value       = b.caseNo || '';
-  document.getElementById('editContactMethod').value= b.contactMethod || '';
-  for (let i = 1; i <= 3; i++) {
-    const c = (b.contacts || [])[i-1] || {};
-    document.getElementById(`editName${i}`).value  = c.name || '';
-    document.getElementById(`editRole${i}`).value  = c.role || '';
-    document.getElementById(`editEmail${i}`).value = c.email || '';
-  }
+  document.getElementById('editCompanyName').value = b.companyName || '';
+  document.getElementById('editIndustry').value    = b.industry || '';
+  document.getElementById('editCaseNo').value      = b.caseNo || '';
+  populateMethodSelect(document.getElementById('editContactMethod'), b.contactMethod || '');
+  const area = document.getElementById('editContactsArea');
+  area.innerHTML = '';
+  const contacts = b.contacts && b.contacts.length ? b.contacts : [{ name:'', role:'', email:'' }];
+  contacts.forEach(c => addContactRow('editContactsArea', c));
   document.getElementById('editBuyerModal').classList.remove('hidden');
 }
 function closeEditBuyer() {
@@ -866,20 +913,14 @@ function saveEditBuyer() {
   if (!companyName) { showToast('企業名を入力してください', 'error'); return; }
   const idx = state.buyers.findIndex(b => b.id === editingBuyerId);
   if (idx === -1) return;
-  const contacts = [];
-  for (let i = 1; i <= 3; i++) {
-    const name  = document.getElementById(`editName${i}`).value.trim();
-    const role  = document.getElementById(`editRole${i}`).value.trim();
-    const email = document.getElementById(`editEmail${i}`).value.trim();
-    if (name || email) contacts.push({ name, role, email });
-  }
+  let contacts = getContactsFromArea('editContactsArea');
   if (contacts.length === 0) contacts.push({ name: '', role: '', email: '' });
   state.buyers[idx] = {
     ...state.buyers[idx],
     companyName,
     industry:      document.getElementById('editIndustry').value.trim(),
     caseNo:        document.getElementById('editCaseNo').value.trim(),
-    contactMethod: document.getElementById('editContactMethod').value.trim(),
+    contactMethod: document.getElementById('editContactMethod').value,
     contacts,
   };
   saveBuyers();
@@ -919,20 +960,14 @@ function clearAllBuyers() {
 function addBuyerManually() {
   const companyName = document.getElementById('addCompanyName').value.trim();
   if (!companyName) { showToast('企業名を入力してください', 'error'); return; }
-  const contacts = [];
-  for (let i = 1; i <= 3; i++) {
-    const name  = document.getElementById(`addName${i}`).value.trim();
-    const role  = document.getElementById(`addRole${i}`).value.trim();
-    const email = document.getElementById(`addEmail${i}`).value.trim();
-    if (name || email) contacts.push({ name, role, email });
-  }
+  let contacts = getContactsFromArea('addContactsArea');
   if (contacts.length === 0) contacts.push({ name: '', role: '', email: '' });
   const buyer = {
     id: 'b_' + Date.now() + '_' + Math.random().toString(36).substr(2,6),
     caseNo: document.getElementById('addCaseNo').value.trim(),
     companyName,
     industry: document.getElementById('addIndustry').value.trim(),
-    contactMethod: document.getElementById('addContactMethod').value.trim(),
+    contactMethod: document.getElementById('addContactMethod').value,
     contacts,
   };
   state.buyers.push(buyer);
@@ -941,9 +976,11 @@ function addBuyerManually() {
   populateFilters();
   filterTable();
   // reset form
-  ['addCompanyName','addIndustry','addCaseNo','addContactMethod',
-   'addName1','addRole1','addEmail1','addName2','addRole2','addEmail2',
-   'addName3','addRole3','addEmail3'].forEach(id => { document.getElementById(id).value = ''; });
+  ['addCompanyName','addIndustry','addCaseNo'].forEach(id => { document.getElementById(id).value = ''; });
+  populateMethodSelect(document.getElementById('addContactMethod'), '');
+  const area = document.getElementById('addContactsArea');
+  area.innerHTML = '';
+  addContactRow('addContactsArea');
   renderBuyerStats();
   showToast(`${companyName} を追加しました`, 'success');
 }
@@ -1083,19 +1120,20 @@ function cancelCsvImport() {
 
 function exportBuyersCsv() {
   if (state.buyers.length === 0) { showToast('エクスポートするデータがありません', 'error'); return; }
-  const headers = ['企業名','業種','案件No','連絡方法',
-    '連絡先1_名前','連絡先1_役職','連絡先1_メール',
-    '連絡先2_名前','連絡先2_役職','連絡先2_メール',
-    '連絡先3_名前','連絡先3_役職','連絡先3_メール'];
+  const maxContacts = Math.max(...state.buyers.map(b => (b.contacts||[]).length), 1);
+  const contactHeaders = [];
+  for (let i = 1; i <= maxContacts; i++) {
+    contactHeaders.push(`連絡先${i}_名前`, `連絡先${i}_役職`, `連絡先${i}_メール`);
+  }
+  const headers = ['企業名','業種','案件No','連絡方法', ...contactHeaders];
   const rows = [headers];
   for (const b of state.buyers) {
     const cs = b.contacts || [];
-    rows.push([
-      b.companyName, b.industry, b.caseNo, b.contactMethod,
-      (cs[0]||{}).name||'', (cs[0]||{}).role||'', (cs[0]||{}).email||'',
-      (cs[1]||{}).name||'', (cs[1]||{}).role||'', (cs[1]||{}).email||'',
-      (cs[2]||{}).name||'', (cs[2]||{}).role||'', (cs[2]||{}).email||'',
-    ]);
+    const contactCols = [];
+    for (let i = 0; i < maxContacts; i++) {
+      contactCols.push((cs[i]||{}).name||'', (cs[i]||{}).role||'', (cs[i]||{}).email||'');
+    }
+    rows.push([b.companyName, b.industry, b.caseNo, b.contactMethod, ...contactCols]);
   }
   const csvText = '\uFEFF' + rows.map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
@@ -1376,7 +1414,7 @@ function renderTable() {
         <td>${escHtml(c.caseNo)}</td>
         <td class="company-cell" title="${escHtml(c.companyName)}"><strong>${escHtml(c.companyName)}</strong></td>
         <td>${escHtml(c.industry)}</td>
-        <td>${c.contactMethod ? `<span class="badge badge-success">${escHtml(c.contactMethod)}</span>` : '<span style="color:var(--gray-400);font-size:12px;">未設定</span>'}</td>
+        <td>${methodBadgeHtml(c.contactMethod)}</td>
         <td>${escHtml(c.name)}</td>
         <td>${escHtml(c.role)}</td>
         <td class="email-cell" title="${escHtml(c.email)}">${c.email || '<span style="color:var(--gray-400)">未登録</span>'}</td>
