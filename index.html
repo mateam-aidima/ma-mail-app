@@ -244,11 +244,10 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>PJ番号</label>
-        <input type="text" id="newPJNum" placeholder="例：PJ-001" style="font-weight:700;font-size:16px;">
-        <div class="help-text">「PJ-」から始まる番号を入力してください</div>
+        <label>PJ名（プロジェクト名）</label>
+        <input type="text" id="newPJNum" placeholder="例：PJ-Japan" style="font-weight:700;font-size:16px;">
+        <div class="help-text">アルファベットのプロジェクト名を入力してください（例：PJ-Japan、PJ-Stone）</div>
       </div>
-      <div class="form-group"><label>案件名</label><input type="text" id="newPJName" placeholder="例：製造業 売上3億円 M&A案件"></div>
       <div class="form-group"><label>業種</label><input type="text" id="newPJIndustry" placeholder="例：製造業"></div>
       <div class="form-group"><label>概要（ノンネーム情報）</label><textarea id="newPJDesc" style="min-height:80px;" placeholder="例：関西の製造業。売上3億、利益5000万。後継者不在が売却理由。"></textarea></div>
       <div style="display:flex;gap:10px;">
@@ -366,7 +365,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
           <div class="form-group" style="flex:1;min-width:120px;"><label style="font-size:11px;">タイミング</label><input type="text" id="tmplTiming" placeholder="初回アプローチ"></div>
         </div>
         <div class="form-group"><label style="font-size:11px;">件名</label><input type="text" id="tmplSubject" placeholder="【案件ご紹介】..."></div>
-        <div class="form-group"><label style="font-size:11px;">本文（{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{案件名}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は自動置換）</label><textarea id="tmplBody" style="min-height:140px;"></textarea></div>
+        <div class="form-group"><label style="font-size:11px;">本文（{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は自動置換）</label><textarea id="tmplBody" style="min-height:140px;"></textarea></div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-primary btn-sm" onclick="saveTemplateEdit()">保存</button>
           <button class="btn btn-outline btn-sm" onclick="cancelTemplateEdit()">キャンセル</button>
@@ -589,7 +588,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
             <div class="form-group">
               <label>件名</label>
               <input type="text" id="emailSubject" placeholder="【案件ご紹介】〇〇業界 M&A案件のご案内">
-              <div class="help-text">{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{案件名}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は送信時に自動置換されます</div>
+              <div class="help-text">{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は送信時に自動置換されます</div>
             </div>
             <div class="form-group">
               <label>本文</label>
@@ -1502,7 +1501,7 @@ function renderPJSelect() {
   const sel = document.getElementById('pjSelect');
   const current = sel.value;
   sel.innerHTML = '<option value="">-- PJを選択してください --</option>' +
-    state.pjList.map(p => `<option value="${escHtml(p.pjId)}">${escHtml(p.pjId)} - ${escHtml(p.pjName)}</option>`).join('');
+    state.pjList.map(p => `<option value="${escHtml(p.pjId)}">${escHtml(p.pjId)}</option>`).join('');
   if (current) sel.value = current;
 }
 
@@ -1521,12 +1520,11 @@ function onPJChange() {
     if (p.conditions) extraHtml += `<span style="font-size:12px;color:var(--gray-600);">希望条件：${escHtml(p.conditions)}</span>`;
     document.getElementById('pjInfoBox').innerHTML =
       `<span class="pj-num">${escHtml(p.pjId)}</span>` +
-      `<span style="font-weight:600;">${escHtml(p.pjName)}</span>` +
       (p.industry ? `<span class="badge badge-primary">${escHtml(p.industry)}</span>` : '') +
       (p.desc ? `<span style="color:var(--gray-500);font-size:12px;">${escHtml(p.desc)}</span>` : '') +
       extraHtml;
     document.getElementById('pjSendInfo').innerHTML =
-      `📁 PJ: <b>${escHtml(p.pjId)} ${escHtml(p.pjName)}</b> を送信します`;
+      `📁 PJ: <b>${escHtml(p.pjId)}</b> を送信します`;
   } else {
     detail.classList.add('hidden');
   }
@@ -1534,17 +1532,14 @@ function onPJChange() {
 }
 
 function showNewPJModal() {
-  const nums = state.pjList.map(p => parseInt((p.pjId.match(/\d+/) || ['0'])[0])).filter(n => !isNaN(n));
-  const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
-  document.getElementById('newPJNum').value = `PJ-${String(next).padStart(3,'0')}`;
-  ['newPJName','newPJIndustry','newPJDesc','newPJRevenue','newPJProfit','newPJLocation','newPJSellReason','newPJConditions'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('newPJNum').value = '';
+  ['newPJIndustry','newPJDesc','newPJRevenue','newPJProfit','newPJLocation','newPJSellReason','newPJConditions'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('newPJModal').classList.remove('hidden');
 }
 function closeNewPJModal() { document.getElementById('newPJModal').classList.add('hidden'); }
 
 function saveNewPJ() {
   const pjId      = document.getElementById('newPJNum').value.trim();
-  const pjName    = document.getElementById('newPJName').value.trim();
   const ind       = document.getElementById('newPJIndustry').value.trim();
   const desc      = document.getElementById('newPJDesc').value.trim();
   const revenue   = document.getElementById('newPJRevenue').value.trim();
@@ -1552,10 +1547,10 @@ function saveNewPJ() {
   const location  = document.getElementById('newPJLocation').value.trim();
   const sellReason= document.getElementById('newPJSellReason').value.trim();
   const conditions= document.getElementById('newPJConditions').value.trim();
-  if (!pjId)   { showToast('PJ番号を入力してください', 'error'); return; }
-  if (!pjName) { showToast('案件名を入力してください', 'error'); return; }
+  if (!pjId) { showToast('PJ名を入力してください', 'error'); return; }
+  if (state.pjList.some(p => p.pjId === pjId)) { showToast('同じPJ名が既に存在します', 'error'); return; }
   const now = new Date().toLocaleDateString('ja-JP');
-  state.pjList.push({ pjId, pjName, industry: ind, desc, revenue, profit, location, sellReason, conditions, date: now });
+  state.pjList.push({ pjId, industry: ind, desc, revenue, profit, location, sellReason, conditions, date: now });
   savePJList();
   renderPJSelect();
   nlRenderPJList();
@@ -1824,7 +1819,7 @@ function handleFileUpload(input) {
       <span>📄</span>
       <span class="name">${escHtml(file.name)}</span>
       <span class="size">${formatFileSize(file.size)}</span>
-      <span class="remove" onclick="removeFile()">✕</span>
+      <button type="button" class="btn btn-danger btn-sm" onclick="removeFile()" style="padding:3px 10px;font-size:12px;flex-shrink:0;">🗑️ 削除</button>
     </div>`;
 }
 function removeFile() {
@@ -1907,7 +1902,7 @@ function replacePlaceholders(text, c) {
     .replace(/\{\{役職\}\}/g,     c.role)
     .replace(/\{\{業種\}\}/g,     c.industry)
     .replace(/\{\{PJ番号\}\}/g,   p.pjId || '')
-    .replace(/\{\{案件名\}\}/g,   p.pjName || '')
+    .replace(/\{\{案件名\}\}/g,   '')
     .replace(/\{\{売上規模\}\}/g, p.revenue || '')
     .replace(/\{\{利益規模\}\}/g, p.profit || '')
     .replace(/\{\{所在地\}\}/g,   p.location || '')
@@ -2074,7 +2069,7 @@ function nlRenderPJList() {
     return `<div class="nl-pj-card ${sel?'nl-selected':''}" onclick="nlTogglePJ('${escHtml(p.pjId)}')">
       <div class="pj-card-header">
         <input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();nlTogglePJ('${escHtml(p.pjId)}')" style="width:16px;height:16px;cursor:pointer;">
-        <span class="pj-card-title">${escHtml(p.pjId)} ｜ ${escHtml(p.pjName)}</span>
+        <span class="pj-card-title">${escHtml(p.pjId)}</span>
         <span class="badge badge-primary" style="font-size:10px;">${escHtml(p.industry||'')}</span>
       </div>
       ${p.desc ? `<div class="pj-card-desc">${escHtml(p.desc)}</div>` : ''}
@@ -2194,7 +2189,7 @@ function buildDealListText() {
   const sep = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
   const lines = [sep];
   pjs.forEach(p => {
-    lines.push(`◆ ${p.pjId}：${p.pjName}`);
+    lines.push(`◆ ${p.pjId}`);
     if (p.industry)   lines.push(`　業種：${p.industry}`);
     if (p.revenue)    lines.push(`　売上規模：${p.revenue}`);
     if (p.profit)     lines.push(`　利益規模：${p.profit}`);
@@ -2214,7 +2209,7 @@ function nlRenderSelectedPJPreview() {
   const pjs = state.pjList.filter(p => state.nl.selectedPJs.has(p.pjId));
   area.innerHTML = pjs.map(p => `
     <div style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:10px;margin-bottom:8px;background:var(--gray-50);">
-      <div style="font-weight:700;color:var(--primary);">${escHtml(p.pjId)}：${escHtml(p.pjName)}</div>
+      <div style="font-weight:700;color:var(--primary);">${escHtml(p.pjId)}</div>
       ${p.industry ? `<div style="font-size:12px;color:var(--gray-500);margin-top:2px;">業種：${escHtml(p.industry)}</div>` : ''}
       ${p.desc ? `<div style="font-size:12px;color:var(--gray-600);margin-top:4px;white-space:pre-wrap;">${escHtml(p.desc)}</div>` : ''}
     </div>`).join('');
@@ -2348,7 +2343,7 @@ function renderSentHistoryTable() {
   }
   tbody.innerHTML = filtered.slice().reverse().map(h => `<tr>
     <td style="white-space:nowrap;font-size:12px;">${escHtml(h.date)}</td>
-    <td style="white-space:nowrap;">${escHtml(h.pjId)} ${escHtml(h.pjName||'')}</td>
+    <td style="white-space:nowrap;">${escHtml(h.pjId)}</td>
     <td>${escHtml(h.companyName)}</td>
     <td class="email-cell" style="font-family:monospace;font-size:12px;">${escHtml(h.email)}</td>
   </tr>`).join('');
@@ -2362,8 +2357,8 @@ function exportSentHistoryCsv() {
     (h.pjName||'').toLowerCase().includes(q)
   );
   if (filtered.length === 0) { showToast('エクスポートするデータがありません', 'error'); return; }
-  const headers = ['日時','PJ番号','PJ名','企業名','メールアドレス'];
-  const rows = [headers, ...filtered.map(h => [h.date, h.pjId, h.pjName||'', h.companyName, h.email])];
+  const headers = ['日時','PJ名','企業名','メールアドレス'];
+  const rows = [headers, ...filtered.map(h => [h.date, h.pjId, h.companyName, h.email])];
   const csvText = '\uFEFF' + rows.map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
