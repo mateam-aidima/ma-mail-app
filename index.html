@@ -47,6 +47,8 @@ body { font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif; backgroun
 .login-box p { color: var(--gray-500); margin-bottom: 32px; font-size: 14px; }
 .login-box .btn { width: 100%; justify-content: center; padding: 14px; font-size: 16px; }
 .login-logo { font-size: 48px; margin-bottom: 16px; }
+.login-spinner { width:44px; height:44px; border:4px solid var(--gray-200); border-top-color:var(--primary); border-radius:50%; animation:login-spin 0.8s linear infinite; margin:0 auto 12px; }
+@keyframes login-spin { to { transform:rotate(360deg); } }
 .steps { display: flex; margin-bottom: 24px; background: white; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--gray-200); overflow: hidden; }
 .step { flex: 1; padding: 14px 16px; text-align: center; font-size: 14px; font-weight: 500; color: var(--gray-400); border-right: 1px solid var(--gray-200); transition: all 0.3s; }
 .step:last-child { border-right: none; }
@@ -196,14 +198,19 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
     <div class="login-logo">📧</div>
     <h1>M&A 案件メール配信システム</h1>
     <p>買い手候補リストへのPJ別メール一括配信ツール</p>
-    <button class="btn btn-primary btn-lg" onclick="handleLogin()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
-      Googleアカウントでログイン
-    </button>
-    <div style="margin-top:20px; display:flex; gap:8px; justify-content:center;">
-      <button class="btn btn-outline btn-sm" onclick="showSetup()">⚙️ 初期設定</button>
+    <!-- ローディング状態（初回自動認証中） -->
+    <div id="loginLoadingState">
+      <div class="login-spinner"></div>
+      <p style="color:var(--gray-400);font-size:13px;margin-bottom:0;">認証情報を確認中...</p>
     </div>
-    <p style="margin-top:14px; font-size:12px; color:var(--gray-400);">※ Gmail APIへのアクセス権限が必要です（メール送信のみ）</p>
+    <!-- ログインボタン状態（自動認証失敗時に表示） -->
+    <div id="loginButtonState" class="hidden">
+      <button class="btn btn-primary btn-lg" onclick="handleLogin()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+        Googleアカウントでログイン
+      </button>
+      <p style="margin-top:14px; font-size:12px; color:var(--gray-400);">※ Gmail APIへのアクセス権限が必要です（メール送信のみ）</p>
+    </div>
   </div>
 </div>
 
@@ -215,6 +222,12 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
       <button class="close-btn" onclick="closeSenderSettings()">&times;</button>
     </div>
     <div class="modal-body">
+      <div class="form-group">
+        <label>Google OAuth Client ID</label>
+        <input type="text" id="settingsClientId" placeholder="xxxx.apps.googleusercontent.com">
+        <div class="help-text">Google Cloud Console → APIとサービス → 認証情報 で確認できます。変更後は再ログインが必要です。</div>
+      </div>
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--gray-200);">
       <div class="form-group">
         <label>送信元メールアドレス（エイリアス）</label>
         <input type="email" id="settingsFromEmail" placeholder="例：ma_team@mamirai-mp.jp">
@@ -965,8 +978,8 @@ function saveSetup() {
   localStorage.setItem('ma_clientId', document.getElementById('setupClientId').value.trim());
   closeSetup();
   showToast('設定を保存しました。再初期化中...', 'success');
-  tokenClient = null; gapiClientReady = false;
-  maybeInitAll().then(() => { if (tokenClient) showToast('初期化完了！ログインできます', 'success'); });
+  tokenClient = null; gapiClientReady = false; silentAuthTriggered = false;
+  maybeInitAll(false).then(() => { if (tokenClient) showToast('初期化完了！ログインできます', 'success'); });
 }
 
 // ============================================================
@@ -977,33 +990,56 @@ let gapiLoaded = false, gisLoaded = false, tokenClient = null, gapiClientReady =
 function loadGapi() {
   const s1 = document.createElement('script');
   s1.src = 'https://apis.google.com/js/api.js';
-  s1.onload = () => { gapi.load('client', () => { gapiLoaded = true; maybeInitAll(); }); };
+  s1.onload = () => { gapi.load('client', () => { gapiLoaded = true; maybeInitAll(true); }); };
   document.body.appendChild(s1);
   const s2 = document.createElement('script');
   s2.src = 'https://accounts.google.com/gsi/client';
-  s2.onload = () => { gisLoaded = true; maybeInitAll(); };
+  s2.onload = () => { gisLoaded = true; maybeInitAll(true); };
   document.body.appendChild(s2);
 }
 
-async function maybeInitAll() {
+let silentAuthTriggered = false;
+let isSilentAuth = false;
+
+function showLoginButtonState() {
+  const ls = document.getElementById('loginLoadingState');
+  const lb = document.getElementById('loginButtonState');
+  if (ls) ls.classList.add('hidden');
+  if (lb) lb.classList.remove('hidden');
+}
+
+async function maybeInitAll(trySilentAuth = false) {
   if (!gapiLoaded || !gisLoaded) return;
   const config = getConfig();
-  if (!config.clientId) return;
-  try {
-    await gapi.client.init({
-      discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest']
-    });
-    gapiClientReady = true;
-  } catch(e) { showToast('API初期化エラー: ' + (e.message||e), 'error'); return; }
+  if (!config.clientId) { showLoginButtonState(); return; }
+  if (!gapiClientReady) {
+    try {
+      await gapi.client.init({
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest']
+      });
+      gapiClientReady = true;
+    } catch(e) { showToast('API初期化エラー: ' + (e.message||e), 'error'); showLoginButtonState(); return; }
+  }
   try {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: config.clientId, scope: SCOPES, callback: handleAuthCallback
     });
-  } catch(e) { showToast('OAuth初期化エラー: ' + (e.message||e), 'error'); }
+  } catch(e) { showToast('OAuth初期化エラー: ' + (e.message||e), 'error'); showLoginButtonState(); return; }
+  if (trySilentAuth && !silentAuthTriggered) {
+    silentAuthTriggered = true;
+    isSilentAuth = true;
+    tokenClient.requestAccessToken({ prompt: '' });
+  }
 }
 
 function handleAuthCallback(resp) {
-  if (resp.error) { showToast('認証エラー: ' + resp.error, 'error'); return; }
+  if (resp.error) {
+    if (!isSilentAuth) showToast('認証エラー: ' + resp.error, 'error');
+    isSilentAuth = false;
+    showLoginButtonState();
+    return;
+  }
+  isSilentAuth = false;
   state.isSignedIn = true;
   fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
     headers: { Authorization: 'Bearer ' + gapi.client.getToken().access_token }
@@ -1020,15 +1056,15 @@ function handleAuthCallback(resp) {
 
 function handleLogin() {
   const c = getConfig();
-  if (!c.clientId) { showSetup(); showToast('先に初期設定（Client ID）を完了してください', 'info'); return; }
+  if (!c.clientId) { showSenderSettings(); showToast('先に⚙️設定からClient IDを入力してください', 'info'); return; }
   if (!tokenClient) {
-    showToast('APIを初期化しています...', 'info');
-    maybeInitAll().then(() => {
-      if (tokenClient) tokenClient.requestAccessToken();
+    maybeInitAll(false).then(() => {
+      if (tokenClient) { isSilentAuth = false; tokenClient.requestAccessToken(); }
       else showToast('初期化失敗。設定を確認してページを再読み込みしてください', 'error');
     });
     return;
   }
+  isSilentAuth = false;
   tokenClient.requestAccessToken();
 }
 
@@ -1038,6 +1074,7 @@ function handleLogout() {
   state.isSignedIn = false;
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
+  showLoginButtonState();
 }
 
 // ============================================================
@@ -1077,6 +1114,7 @@ function savePjPdfs() {
   catch(e) { showToast('PDFの保存に失敗しました（ブラウザの容量不足の可能性があります）', 'error'); }
 }
 function showSenderSettings() {
+  document.getElementById('settingsClientId').value     = getConfig().clientId;
   document.getElementById('settingsFromEmail').value    = localStorage.getItem('ma_fromEmail') || '';
   document.getElementById('settingsSenderName').value   = localStorage.getItem('ma_senderName') || '';
   document.getElementById('settingsSendInterval').value = localStorage.getItem('ma_sendInterval') || '3';
@@ -1086,9 +1124,17 @@ function closeSenderSettings() {
   document.getElementById('senderSettingsModal').classList.add('hidden');
 }
 function saveSenderSettings() {
+  const newClientId  = document.getElementById('settingsClientId').value.trim();
   const fromEmail    = document.getElementById('settingsFromEmail').value.trim();
   const senderName   = document.getElementById('settingsSenderName').value.trim();
   const sendInterval = document.getElementById('settingsSendInterval').value || '3';
+  // Save Client ID and reinitialize if changed
+  const oldClientId = getConfig().clientId;
+  if (newClientId !== oldClientId) {
+    localStorage.setItem('ma_clientId', newClientId);
+    tokenClient = null; gapiClientReady = false; silentAuthTriggered = false;
+    maybeInitAll(false).then(() => { if (tokenClient) showToast('Client ID更新・初期化完了', 'success'); });
+  }
   localStorage.setItem('ma_fromEmail',    fromEmail);
   localStorage.setItem('ma_senderName',   senderName);
   localStorage.setItem('ma_sendInterval', sendInterval);
