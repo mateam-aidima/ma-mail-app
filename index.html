@@ -85,6 +85,18 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
 .badge-teams { background:#dbeafe; color:#1e40af; }
 .badge-method-other { background:#f3f4f6; color:#4b5563; }
 .contact-row { border:1px solid var(--gray-200); border-radius:var(--radius); padding:10px 12px; margin-bottom:8px; background:var(--gray-50); position:relative; }
+/* Mode toggle */
+.mode-bar { display:flex; gap:4px; margin-bottom:16px; background:var(--gray-100); border-radius:var(--radius); padding:4px; }
+.mode-btn { flex:1; padding:9px 16px; border:none; border-radius:calc(var(--radius) - 2px); background:transparent; font-size:13px; font-weight:600; cursor:pointer; color:var(--gray-500); transition:all 0.15s; }
+.mode-btn.mode-active { background:white; color:var(--primary); box-shadow:0 1px 6px rgba(0,0,0,0.12); }
+/* Newsletter PJ card */
+.nl-pj-card { border:2px solid var(--gray-200); border-radius:var(--radius); padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:all 0.15s; background:white; }
+.nl-pj-card:hover { border-color:var(--primary); background:var(--primary-light); }
+.nl-pj-card.nl-selected { border-color:var(--primary); background:#eff6ff; }
+.nl-pj-card .pj-card-header { display:flex; align-items:center; gap:10px; }
+.nl-pj-card .pj-card-title { font-weight:700; font-size:14px; color:var(--gray-800); flex:1; }
+.nl-pj-card .pj-card-meta { font-size:12px; color:var(--gray-500); margin-top:4px; }
+.nl-pj-card .pj-card-desc { font-size:12px; color:var(--gray-600); margin-top:6px; line-height:1.6; border-top:1px solid var(--gray-200); padding-top:6px; white-space:pre-wrap; }
 /* Filter bar */
 .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
 .filter-bar input, .filter-bar select { padding: 7px 10px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 13px; background: white; }
@@ -391,6 +403,14 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
   </div>
 
   <div class="container">
+    <!-- MODE TOGGLE -->
+    <div class="mode-bar">
+      <button id="modeBtnIndiv" class="mode-btn mode-active" onclick="setAppMode('individual')">📧 個別案件送信</button>
+      <button id="modeBtnNews"  class="mode-btn" onclick="setAppMode('newsletter')">📰 メルマガ一括配信</button>
+    </div>
+
+    <!-- INDIVIDUAL MODE STEPS -->
+    <div id="indivContainer">
     <div class="steps">
       <div class="step active" id="step1" onclick="goToStep(1)"><span class="step-num">1</span>PJ選択・送信先</div>
       <div class="step" id="step2" onclick="goToStep(2)"><span class="step-num">2</span>メール作成</div>
@@ -527,6 +547,8 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
       </div>
     </div>
 
+    <!-- /INDIVIDUAL MODE -->
+
     <!-- STEP 3 -->
     <div id="panel3" class="hidden">
       <div class="grid">
@@ -577,8 +599,184 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
         </div>
       </div>
     </div>
-  </div>
-</div>
+    </div><!-- /indivContainer -->
+
+    <!-- ================================================ -->
+    <!-- NEWSLETTER MODE                                   -->
+    <!-- ================================================ -->
+    <div id="nlContainer" class="hidden">
+      <div class="steps">
+        <div class="step active" id="nlStep1"><span class="step-num">1</span>案件選択</div>
+        <div class="step" id="nlStep2"><span class="step-num">2</span>送信先選択</div>
+        <div class="step" id="nlStep3"><span class="step-num">3</span>メール作成</div>
+        <div class="step" id="nlStep4"><span class="step-num">4</span>プレビュー・送信</div>
+      </div>
+
+      <!-- NL STEP 1: 案件選択 -->
+      <div id="nlPanel1">
+        <div class="card">
+          <div class="card-header">
+            <h2>紹介する案件を選択</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="badge badge-primary" id="nlSelectedPJCount">0件選択</span>
+              <button class="btn btn-primary btn-sm" onclick="showNewPJModal()">＋ 新規PJ作成</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">送付するメルマガに含める案件にチェックを入れてください。チェックした案件が本文の <code>{{案件一覧}}</code> に自動展開されます。</div>
+            <div id="nlPJListArea"><p style="color:var(--gray-400);text-align:center;padding:24px;">案件がありません。「＋ 新規PJ作成」から登録してください。</p></div>
+            <div class="action-bar" style="margin-top:16px;">
+              <div></div>
+              <button class="btn btn-primary" onclick="nlGoToStep(2)" id="nlNext1Btn" disabled>次へ：送信先選択 →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NL STEP 2: 送信先選択 -->
+      <div id="nlPanel2" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <h2>送信先を選択</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="badge badge-primary" id="nlSelectedRecipCount">0件選択中</span>
+              <button class="btn btn-primary btn-sm" onclick="showBuyerMgmt()">📊 データ管理</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="filter-bar">
+              <input type="text" id="nlSearchInput" placeholder="🔍 企業名・名前で検索..." oninput="nlFilterTable()">
+              <select id="nlIndustryFilter" onchange="nlFilterTable()"><option value="">全業種</option></select>
+              <button class="btn btn-outline btn-sm" onclick="nlSelectAllVisible()">全選択</button>
+              <button class="btn btn-outline btn-sm" onclick="nlDeselectAll()">全解除</button>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="cb-cell"><input type="checkbox" id="nlSelectAllCb" onchange="nlToggleSelectAll(this)"></th>
+                    <th>企業名</th><th>業種</th><th>連絡方法</th><th>名前</th><th>役職</th><th>メールアドレス</th>
+                  </tr>
+                </thead>
+                <tbody id="nlBuyerTableBody"></tbody>
+              </table>
+            </div>
+            <div class="action-bar" style="margin-top:12px;">
+              <button class="btn btn-outline" onclick="nlGoToStep(1)">← 戻る</button>
+              <button class="btn btn-primary" onclick="nlGoToStep(3)" id="nlNext2Btn" disabled>次へ：メール作成 →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NL STEP 3: メール作成 -->
+      <div id="nlPanel3" class="hidden">
+        <div class="grid">
+          <div class="card">
+            <div class="card-header">
+              <h2>メール作成</h2>
+              <button class="btn btn-outline btn-sm" onclick="showTemplateMgmt()">📝 テンプレート管理</button>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label>テンプレート選択</label>
+                <select class="template-select" id="nlTemplateSelect" onchange="nlApplyTemplate()">
+                  <option value="">-- テンプレートを選択 --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>件名</label>
+                <input type="text" id="nlEmailSubject" placeholder="【案件ご紹介】複数案件のご案内">
+                <div class="help-text">{{企業名}} {{担当者名}} {{役職}} {{業種}} {{案件一覧}} が自動置換されます</div>
+              </div>
+              <div class="form-group">
+                <label>本文</label>
+                <textarea id="nlEmailBody" placeholder="メール本文を入力...&#10;&#10;{{案件一覧}} と書いた箇所に選択した案件リストが自動挿入されます"></textarea>
+              </div>
+              <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:var(--radius);padding:10px 12px;font-size:12px;color:#92400e;">
+                <b>{{案件一覧}}</b> を本文に含めると、選択した案件の一覧（PJ番号・案件名・業種・概要）が自動で展開されます
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card" style="margin-bottom:20px;">
+              <div class="card-header"><h2>選択中の案件</h2></div>
+              <div class="card-body" id="nlSelectedPJPreview" style="max-height:280px;overflow-y:auto;"></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h2>送信者設定</h2></div>
+              <div class="card-body">
+                <div class="sender-info">ℹ️ <span id="nlSenderEmail"></span> から送信されます</div>
+                <div class="form-group">
+                  <label>差出人表示名（任意）</label>
+                  <input type="text" id="nlSenderName" placeholder="例: 株式会社アイドマ・ホールディングス M&A戦略室">
+                </div>
+                <div class="form-group">
+                  <label>送信間隔（秒）</label>
+                  <input type="number" id="nlSendInterval" value="3" min="1" max="30" style="width:80px;">
+                </div>
+              </div>
+            </div>
+            <div class="action-bar" style="margin-top:12px;">
+              <button class="btn btn-outline" onclick="nlGoToStep(2)">← 戻る</button>
+              <button class="btn btn-primary" onclick="nlGoToStep(4)">次へ：プレビュー →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NL STEP 4: プレビュー・送信 -->
+      <div id="nlPanel4" class="hidden">
+        <div class="grid">
+          <div class="card">
+            <div class="card-header">
+              <h2>メールプレビュー</h2>
+              <span class="badge badge-primary" id="nlSelectedCount4">0件</span>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label>プレビュー対象</label>
+                <select id="nlPreviewTarget" onchange="nlUpdatePreview()" style="width:100%;padding:8px 12px;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:13px;"></select>
+              </div>
+              <div class="preview-box">
+                <div class="preview-subject" id="nlPreviewSubject"></div>
+                <div class="preview-body" id="nlPreviewBody"></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card" style="margin-bottom:20px;">
+              <div class="card-header"><h2>送信先一覧</h2></div>
+              <div class="card-body">
+                <div style="max-height:200px;overflow-y:auto;">
+                  <table>
+                    <thead><tr><th>企業名</th><th>名前</th><th>メールアドレス</th></tr></thead>
+                    <tbody id="nlSendListBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h2>送信実行</h2></div>
+              <div class="card-body">
+                <div id="nlSendProgress" class="hidden">
+                  <div class="progress-bar"><div class="progress-fill" id="nlProgressFill" style="width:0%"></div></div>
+                  <div class="send-status" id="nlSendStatusText">送信中...</div>
+                  <div class="send-log" id="nlSendLog"></div>
+                </div>
+                <div class="action-bar">
+                  <button class="btn btn-outline" onclick="nlGoToStep(3)">← 戻る</button>
+                  <button class="btn btn-danger btn-lg" id="nlSendBtn" onclick="nlConfirmAndSend()">📨 一括送信する</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /nlContainer -->
+
+  </div><!-- /container -->
+</div><!-- /mainApp -->
 
 <div class="toast" id="toast"></div>
 
@@ -610,6 +808,14 @@ let state = {
   sentHistory: [],
   csvParsedBuyers: [],
   editingTemplateIdx: null,
+  appMode: 'individual',
+  // Newsletter state
+  nl: {
+    selectedPJs: new Set(),
+    selectedKeys: new Set(),
+    filteredContacts: [],
+    currentStep: 1,
+  },
 };
 
 // ============================================================
@@ -673,6 +879,7 @@ function handleAuthCallback(resp) {
     state.userEmail = info.email || '';
     document.getElementById('userEmail').textContent = state.userEmail;
     document.getElementById('senderEmail2').textContent = state.userEmail;
+    document.getElementById('nlSenderEmail').textContent = state.userEmail;
   });
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
@@ -1235,6 +1442,7 @@ function saveNewPJ() {
   state.pjList.push({ pjId, pjName, industry: ind, desc, date: now });
   savePJList();
   renderPJSelect();
+  nlRenderPJList();
   document.getElementById('pjSelect').value = pjId;
   onPJChange();
   closeNewPJModal();
@@ -1266,6 +1474,7 @@ function isSentToDeal(email) {
 // TEMPLATES
 // ============================================================
 function renderTemplateSelect() {
+  nlRenderTemplateSelect();
   const sel = document.getElementById('templateSelect');
   sel.innerHTML = '<option value="">-- テンプレートを選択 --</option>' +
     state.templates.map((t, i) => `<option value="${i}">${escHtml(t.no)} ${escHtml(t.timing)}</option>`).join('');
@@ -1378,6 +1587,8 @@ function populateFilters() {
   const sel = document.getElementById('industryFilter');
   sel.innerHTML = '<option value="">全業種</option>' +
     industries.map(i => `<option value="${escHtml(i)}">${escHtml(i)}</option>`).join('');
+  nlPopulateIndustryFilter();
+  nlFilterTable();
 }
 
 function filterTable() {
@@ -1654,6 +1865,293 @@ async function sendSingleEmail(to, subject, bodyText, senderName) {
     ]);
   }
   return await gapi.client.gmail.users.messages.send({ userId: 'me', resource: { raw } });
+}
+
+// ============================================================
+// APP MODE (Individual / Newsletter)
+// ============================================================
+function setAppMode(mode) {
+  state.appMode = mode;
+  document.getElementById('modeBtnIndiv').classList.toggle('mode-active', mode === 'individual');
+  document.getElementById('modeBtnNews').classList.toggle('mode-active',  mode === 'newsletter');
+  document.getElementById('indivContainer').classList.toggle('hidden', mode !== 'individual');
+  document.getElementById('nlContainer').classList.toggle('hidden',    mode !== 'newsletter');
+  if (mode === 'newsletter') {
+    nlRenderPJList();
+    nlRenderTemplateSelect();
+    nlFilterTable();
+    const el = document.getElementById('nlSenderEmail');
+    if (el) el.textContent = state.userEmail;
+  }
+}
+
+// ============================================================
+// NEWSLETTER – STEP NAVIGATION
+// ============================================================
+function nlGoToStep(n) {
+  if (n === 2 && state.nl.selectedPJs.size === 0) { showToast('案件を1件以上選択してください', 'error'); return; }
+  if (n === 3 && state.nl.selectedKeys.size === 0) { showToast('送信先を1件以上選択してください', 'error'); return; }
+  if (n === 4) {
+    const subj = document.getElementById('nlEmailSubject').value.trim();
+    const body = document.getElementById('nlEmailBody').value.trim();
+    if (!subj || !body) { showToast('件名と本文を入力してください', 'error'); return; }
+    nlPreparePreview();
+  }
+  if (n === 3) {
+    nlRenderSelectedPJPreview();
+    document.getElementById('nlSenderEmail').textContent = state.userEmail;
+  }
+  state.nl.currentStep = n;
+  [1,2,3,4].forEach(i => {
+    document.getElementById(`nlPanel${i}`).classList.toggle('hidden', i !== n);
+    const s = document.getElementById(`nlStep${i}`);
+    s.classList.remove('active','completed');
+    if (i < n) s.classList.add('completed');
+    if (i === n) s.classList.add('active');
+  });
+  window.scrollTo(0, 0);
+}
+
+// ============================================================
+// NEWSLETTER – STEP 1: 案件選択
+// ============================================================
+function nlRenderPJList() {
+  const area = document.getElementById('nlPJListArea');
+  if (state.pjList.length === 0) {
+    area.innerHTML = '<p style="color:var(--gray-400);text-align:center;padding:24px;">案件がありません。「＋ 新規PJ作成」から登録してください。</p>';
+    document.getElementById('nlNext1Btn').disabled = true;
+    return;
+  }
+  area.innerHTML = state.pjList.map(p => {
+    const sel = state.nl.selectedPJs.has(p.pjId);
+    return `<div class="nl-pj-card ${sel?'nl-selected':''}" onclick="nlTogglePJ('${escHtml(p.pjId)}')">
+      <div class="pj-card-header">
+        <input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();nlTogglePJ('${escHtml(p.pjId)}')" style="width:16px;height:16px;cursor:pointer;">
+        <span class="pj-card-title">${escHtml(p.pjId)} ｜ ${escHtml(p.pjName)}</span>
+        <span class="badge badge-primary" style="font-size:10px;">${escHtml(p.industry||'')}</span>
+      </div>
+      ${p.desc ? `<div class="pj-card-desc">${escHtml(p.desc)}</div>` : ''}
+    </div>`;
+  }).join('');
+  nlUpdatePJCount();
+}
+
+function nlTogglePJ(pjId) {
+  if (state.nl.selectedPJs.has(pjId)) state.nl.selectedPJs.delete(pjId);
+  else state.nl.selectedPJs.add(pjId);
+  nlRenderPJList();
+}
+
+function nlUpdatePJCount() {
+  const n = state.nl.selectedPJs.size;
+  document.getElementById('nlSelectedPJCount').textContent = `${n}件選択`;
+  document.getElementById('nlNext1Btn').disabled = n === 0;
+}
+
+// ============================================================
+// NEWSLETTER – STEP 2: 送信先選択
+// ============================================================
+function nlFilterTable() {
+  const search = (document.getElementById('nlSearchInput')?.value || '').toLowerCase();
+  const ind    = document.getElementById('nlIndustryFilter')?.value || '';
+  state.nl.filteredContacts = state.flatContacts.filter(c =>
+    (!search || c.companyName.toLowerCase().includes(search) || (c.name||'').toLowerCase().includes(search)) &&
+    (!ind || c.industry === ind)
+  );
+  nlRenderTable();
+  nlUpdateRecipCount();
+}
+
+function nlRenderTable() {
+  const tbody = document.getElementById('nlBuyerTableBody');
+  if (!tbody) return;
+  if (state.nl.filteredContacts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray-400);">該当する候補がいません</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.nl.filteredContacts.map(c => {
+    const sel = state.nl.selectedKeys.has(c.key);
+    return `<tr class="${sel?'selected':''}" onclick="nlToggleRow('${c.key}',event)">
+      <td class="cb-cell"><input type="checkbox" ${sel?'checked':''} onchange="nlToggleSelect('${c.key}')" onclick="event.stopPropagation()"></td>
+      <td class="company-cell" title="${escHtml(c.companyName)}"><strong>${escHtml(c.companyName)}</strong></td>
+      <td>${escHtml(c.industry)}</td>
+      <td>${methodBadgeHtml(c.contactMethod)}</td>
+      <td>${escHtml(c.name)}</td>
+      <td>${escHtml(c.role)}</td>
+      <td class="email-cell">${c.email || '<span style="color:var(--gray-400)">未登録</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function nlToggleRow(key, event) { if (event.target.tagName === 'INPUT') return; nlToggleSelect(key); }
+function nlToggleSelect(key) {
+  if (state.nl.selectedKeys.has(key)) state.nl.selectedKeys.delete(key);
+  else {
+    const c = state.flatContacts.find(c => c.key === key);
+    if (!c || !c.email) { showToast('メールアドレスが未登録のため選択できません', 'error'); return; }
+    state.nl.selectedKeys.add(key);
+  }
+  nlRenderTable();
+  nlUpdateRecipCount();
+}
+function nlToggleSelectAll(cb) { cb.checked ? nlSelectAllVisible() : nlDeselectAll(); }
+function nlSelectAllVisible() {
+  state.nl.filteredContacts.forEach(c => { if (c.email) state.nl.selectedKeys.add(c.key); });
+  nlRenderTable(); nlUpdateRecipCount();
+}
+function nlDeselectAll() {
+  state.nl.selectedKeys.clear();
+  document.getElementById('nlSelectAllCb').checked = false;
+  nlRenderTable(); nlUpdateRecipCount();
+}
+function nlUpdateRecipCount() {
+  const n = state.nl.selectedKeys.size;
+  const el = document.getElementById('nlSelectedRecipCount');
+  if (el) el.textContent = `${n}件選択中`;
+  const btn = document.getElementById('nlNext2Btn');
+  if (btn) btn.disabled = n === 0;
+}
+function nlGetSelectedContacts() {
+  return [...state.nl.selectedKeys].map(key => state.flatContacts.find(c => c.key === key)).filter(Boolean);
+}
+
+function nlPopulateIndustryFilter() {
+  const sel = document.getElementById('nlIndustryFilter');
+  if (!sel) return;
+  const industries = [...new Set(state.flatContacts.map(c => c.industry).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">全業種</option>' + industries.map(i => `<option value="${escHtml(i)}">${escHtml(i)}</option>`).join('');
+}
+
+// ============================================================
+// NEWSLETTER – STEP 3: メール作成
+// ============================================================
+function nlRenderTemplateSelect() {
+  const sel = document.getElementById('nlTemplateSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- テンプレートを選択 --</option>' +
+    state.templates.map((t,i) => `<option value="${i}">${escHtml(t.no)} ${escHtml(t.timing)}</option>`).join('');
+}
+
+function nlApplyTemplate() {
+  const idx = document.getElementById('nlTemplateSelect').value;
+  if (idx === '') return;
+  const t = state.templates[parseInt(idx)];
+  if (!t) return;
+  document.getElementById('nlEmailSubject').value = t.subject;
+  document.getElementById('nlEmailBody').value    = t.body;
+  showToast('テンプレートを適用しました', 'success');
+}
+
+function buildDealListText() {
+  const pjs = state.pjList.filter(p => state.nl.selectedPJs.has(p.pjId));
+  const sep = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+  const lines = [sep];
+  pjs.forEach(p => {
+    lines.push(`◆ ${p.pjId}：${p.pjName}`);
+    if (p.industry) lines.push(`　業種：${p.industry}`);
+    if (p.desc)     lines.push(`　概要：${p.desc}`);
+    lines.push('');
+  });
+  lines.push(sep);
+  return lines.join('\n');
+}
+
+function nlRenderSelectedPJPreview() {
+  const area = document.getElementById('nlSelectedPJPreview');
+  if (!area) return;
+  const pjs = state.pjList.filter(p => state.nl.selectedPJs.has(p.pjId));
+  area.innerHTML = pjs.map(p => `
+    <div style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:10px;margin-bottom:8px;background:var(--gray-50);">
+      <div style="font-weight:700;color:var(--primary);">${escHtml(p.pjId)}：${escHtml(p.pjName)}</div>
+      ${p.industry ? `<div style="font-size:12px;color:var(--gray-500);margin-top:2px;">業種：${escHtml(p.industry)}</div>` : ''}
+      ${p.desc ? `<div style="font-size:12px;color:var(--gray-600);margin-top:4px;white-space:pre-wrap;">${escHtml(p.desc)}</div>` : ''}
+    </div>`).join('');
+}
+
+function nlReplacePlaceholders(text, c) {
+  return text
+    .replace(/\{\{企業名\}\}/g,   c.companyName || '')
+    .replace(/\{\{担当者名\}\}/g, c.name || '')
+    .replace(/\{\{役職\}\}/g,     c.role || '')
+    .replace(/\{\{業種\}\}/g,     c.industry || '')
+    .replace(/\{\{案件一覧\}\}/g, buildDealListText());
+}
+
+// ============================================================
+// NEWSLETTER – STEP 4: プレビュー・送信
+// ============================================================
+function nlPreparePreview() {
+  const selected = nlGetSelectedContacts();
+  document.getElementById('nlSelectedCount4').textContent = `${selected.length}件`;
+  document.getElementById('nlPreviewTarget').innerHTML = selected.map((c,i) =>
+    `<option value="${i}">${escHtml(c.companyName)} - ${escHtml(c.name||c.email)}</option>`).join('');
+  document.getElementById('nlSendListBody').innerHTML = selected.map(c => `
+    <tr>
+      <td>${escHtml(c.companyName)}</td>
+      <td>${escHtml(c.name)}</td>
+      <td style="font-family:monospace;font-size:12px;">${escHtml(c.email)}</td>
+    </tr>`).join('');
+  nlUpdatePreview();
+}
+
+function nlUpdatePreview() {
+  const selected = nlGetSelectedContacts();
+  const idx = parseInt(document.getElementById('nlPreviewTarget').value) || 0;
+  const c = selected[idx];
+  if (!c) return;
+  const subj = document.getElementById('nlEmailSubject').value;
+  const body = document.getElementById('nlEmailBody').value;
+  document.getElementById('nlPreviewSubject').textContent = nlReplacePlaceholders(subj, c);
+  document.getElementById('nlPreviewBody').textContent    = nlReplacePlaceholders(body, c);
+}
+
+function nlConfirmAndSend() {
+  const selected = nlGetSelectedContacts();
+  if (selected.length === 0) { showToast('送信先がありません', 'error'); return; }
+  const pjNames = state.pjList.filter(p => state.nl.selectedPJs.has(p.pjId)).map(p => p.pjId).join('、');
+  if (!confirm(`【${pjNames}】を含むメルマガを ${selected.length}件に送信します。\nよろしいですか？`)) return;
+  nlSendEmails(selected);
+}
+
+async function nlSendEmails(recipients) {
+  const sendBtn = document.getElementById('nlSendBtn');
+  sendBtn.disabled = true; sendBtn.textContent = '送信中...';
+  document.getElementById('nlSendProgress').classList.remove('hidden');
+  document.getElementById('nlSendLog').innerHTML = '';
+
+  const subject    = document.getElementById('nlEmailSubject').value;
+  const body       = document.getElementById('nlEmailBody').value;
+  const senderName = document.getElementById('nlSenderName').value.trim();
+  const interval   = parseInt(document.getElementById('nlSendInterval').value) || 3;
+
+  let successCount = 0, errorCount = 0;
+
+  for (let i = 0; i < recipients.length; i++) {
+    const c = recipients[i];
+    document.getElementById('nlProgressFill').style.width = ((i+1)/recipients.length*100).toFixed(0) + '%';
+    document.getElementById('nlSendStatusText').textContent = `送信中... ${i+1} / ${recipients.length}`;
+    try {
+      await sendSingleEmail(c.email, nlReplacePlaceholders(subject,c), nlReplacePlaceholders(body,c), senderName);
+      successCount++;
+      nlAddLog(`✅ ${c.companyName} ${c.name} (${c.email})`, 'success');
+    } catch(e) {
+      errorCount++;
+      nlAddLog(`❌ ${c.companyName} ${c.name} - エラー: ${e.message||e}`, 'error');
+    }
+    if (i < recipients.length - 1) await sleep(interval * 1000);
+  }
+
+  document.getElementById('nlSendStatusText').textContent = `送信完了: 成功${successCount}件 / エラー${errorCount}件`;
+  sendBtn.disabled = false; sendBtn.textContent = '📨 一括送信する';
+  showToast(errorCount === 0 ? `${successCount}件を送信しました` : `成功${successCount} / エラー${errorCount}`, errorCount === 0 ? 'success' : 'error');
+}
+
+function nlAddLog(msg, type) {
+  const d = document.getElementById('nlSendLog');
+  const e = document.createElement('div');
+  e.className = `log-entry ${type}`;
+  e.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  d.appendChild(e); d.scrollTop = d.scrollHeight;
 }
 
 // ============================================================
