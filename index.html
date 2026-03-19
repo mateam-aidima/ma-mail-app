@@ -207,6 +207,37 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
   </div>
 </div>
 
+<!-- SENDER SETTINGS MODAL -->
+<div id="senderSettingsModal" class="modal-overlay hidden" onclick="event.target===this&&closeSenderSettings()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚙️ 送信者設定</h3>
+      <button class="close-btn" onclick="closeSenderSettings()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>送信元メールアドレス（エイリアス）</label>
+        <input type="email" id="settingsFromEmail" placeholder="例：ma_team@mamirai-mp.jp">
+        <div class="help-text">Gmailの「他のアドレスでメールを送信」に登録済みのエイリアスを入力してください。空欄の場合はログイン中のアドレスで送信されます。</div>
+      </div>
+      <div class="form-group">
+        <label>差出人表示名</label>
+        <input type="text" id="settingsSenderName" placeholder="例：㈱M&Aミライ・パートナーズ">
+        <div class="help-text">受信者のメールソフトに表示される名前です。日本語・記号も使用できます。</div>
+      </div>
+      <div class="form-group">
+        <label>送信間隔（秒）</label>
+        <input type="number" id="settingsSendInterval" value="3" min="1" max="30" style="width:80px;">
+        <div class="help-text">一括送信時の各メール間の待機時間です。</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeSenderSettings()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveSenderSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- SETUP MODAL -->
 <div id="setupModal" class="modal-overlay hidden" onclick="event.target===this&&closeSetup()">
   <div class="modal">
@@ -473,7 +504,8 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
     <h1>📧 M&A 案件メール配信システム</h1>
     <div class="header-right">
       <span class="user-info" id="userEmail"></span>
-      <button class="btn-logout" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:6px 14px;border-radius:var(--radius);cursor:pointer;font-size:13px;" onclick="showSentHistory()">📋 送信履歴</button>
+      <button class="btn-logout" onclick="showSentHistory()">📋 送信履歴</button>
+      <button class="btn-logout" onclick="showSenderSettings()">⚙️ 設定</button>
       <button class="btn-logout" onclick="handleLogout()">ログアウト</button>
     </div>
   </div>
@@ -618,19 +650,17 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
         </div>
         <div>
           <div class="card" style="margin-bottom:20px;">
-            <div class="card-header"><h2>送信者設定</h2></div>
+            <div class="card-header">
+              <h2>送信者設定</h2>
+              <button class="btn btn-outline btn-sm" onclick="showSenderSettings()">⚙️ 設定を変更</button>
+            </div>
             <div class="card-body">
-              <div class="sender-info">ℹ️ ログイン中：<span id="senderEmail2"></span></div>
-              <div class="form-group">
-                <label>送信元アドレス（エイリアス）</label>
-                <input type="email" id="fromEmail" placeholder="例：ma_team@mamirai-mp.jp" oninput="saveSenderSettings()">
-                <div class="help-text">Gmailの「他のアドレスでメールを送信」に登録済みのエイリアスアドレスを入力してください。空欄の場合はログイン中のアドレスで送信します。</div>
+              <div class="sender-info" style="flex-direction:column;align-items:flex-start;gap:4px;">
+                <div>ℹ️ ログイン中：<span id="senderEmail2" style="font-weight:600;"></span></div>
+                <div>📤 送信元：<span id="dispFromEmail" style="font-weight:600;color:var(--primary);"></span></div>
+                <div>👤 表示名：<span id="dispSenderName" style="font-weight:600;"></span></div>
               </div>
-              <div class="form-group">
-                <label>差出人表示名</label>
-                <input type="text" id="senderName" placeholder="例：㈱M&Aミライ・パートナーズ" oninput="saveSenderSettings()">
-              </div>
-              <div class="form-group">
+              <div class="form-group" style="margin-top:12px;">
                 <label>送信間隔（秒）</label>
                 <input type="number" id="sendInterval" value="3" min="1" max="30" style="width:80px;">
               </div>
@@ -801,19 +831,17 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
               <div class="card-body" id="nlSelectedPJPreview" style="max-height:280px;overflow-y:auto;"></div>
             </div>
             <div class="card">
-              <div class="card-header"><h2>送信者設定</h2></div>
+              <div class="card-header">
+                <h2>送信者設定</h2>
+                <button class="btn btn-outline btn-sm" onclick="showSenderSettings()">⚙️ 設定を変更</button>
+              </div>
               <div class="card-body">
-                <div class="sender-info">ℹ️ ログイン中：<span id="nlSenderEmail"></span></div>
-                <div class="form-group">
-                  <label>送信元アドレス（エイリアス）</label>
-                  <input type="email" id="nlFromEmail" placeholder="例：ma_team@mamirai-mp.jp" oninput="saveSenderSettings()">
-                  <div class="help-text">Gmailの「他のアドレスでメールを送信」に登録済みのエイリアスアドレスを入力してください。</div>
+                <div class="sender-info" style="flex-direction:column;align-items:flex-start;gap:4px;">
+                  <div>ℹ️ ログイン中：<span id="nlSenderEmail" style="font-weight:600;"></span></div>
+                  <div>📤 送信元：<span id="nlDispFromEmail" style="font-weight:600;color:var(--primary);"></span></div>
+                  <div>👤 表示名：<span id="nlDispSenderName" style="font-weight:600;"></span></div>
                 </div>
-                <div class="form-group">
-                  <label>差出人表示名</label>
-                  <input type="text" id="nlSenderName" placeholder="例：㈱M&Aミライ・パートナーズ" oninput="saveSenderSettings()">
-                </div>
-                <div class="form-group">
+                <div class="form-group" style="margin-top:12px;">
                   <label>送信間隔（秒）</label>
                   <input type="number" id="nlSendInterval" value="3" min="1" max="30" style="width:80px;">
                 </div>
@@ -982,8 +1010,8 @@ function handleAuthCallback(resp) {
   }).then(r => r.json()).then(info => {
     state.userEmail = info.email || '';
     document.getElementById('userEmail').textContent = state.userEmail;
-    document.getElementById('senderEmail2').textContent = state.userEmail;
-    document.getElementById('nlSenderEmail').textContent = state.userEmail;
+    ['senderEmail2','nlSenderEmail'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = state.userEmail; });
+    updateSenderDisplays(localStorage.getItem('ma_fromEmail')||'', localStorage.getItem('ma_senderName')||'');
   });
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
@@ -1021,11 +1049,12 @@ function loadAll() {
   state.pjList      = JSON.parse(localStorage.getItem(LS.pjList)      || '[]');
   state.sentHistory = JSON.parse(localStorage.getItem(LS.sentHistory) || '[]');
   state.pjPdfs      = JSON.parse(localStorage.getItem(LS.pjPdfs)      || '{}');
-  // Load saved sender settings
-  const savedFrom = localStorage.getItem('ma_fromEmail') || '';
-  const savedName = localStorage.getItem('ma_senderName') || '';
-  ['fromEmail','nlFromEmail'].forEach(id => { const el = document.getElementById(id); if (el && savedFrom) el.value = savedFrom; });
-  ['senderName','nlSenderName'].forEach(id => { const el = document.getElementById(id); if (el && savedName) el.value = savedName; });
+  // Load saved sender settings and update displays
+  const savedFrom     = localStorage.getItem('ma_fromEmail') || '';
+  const savedName     = localStorage.getItem('ma_senderName') || '';
+  const savedInterval = localStorage.getItem('ma_sendInterval') || '3';
+  ['sendInterval','nlSendInterval'].forEach(id => { const el = document.getElementById(id); if (el) el.value = savedInterval; });
+  updateSenderDisplays(savedFrom, savedName);
 
   rebuildFlatContacts();
   populateFilters();
@@ -1047,9 +1076,33 @@ function savePjPdfs() {
   try { localStorage.setItem(LS.pjPdfs, JSON.stringify(state.pjPdfs)); }
   catch(e) { showToast('PDFの保存に失敗しました（ブラウザの容量不足の可能性があります）', 'error'); }
 }
+function showSenderSettings() {
+  document.getElementById('settingsFromEmail').value    = localStorage.getItem('ma_fromEmail') || '';
+  document.getElementById('settingsSenderName').value   = localStorage.getItem('ma_senderName') || '';
+  document.getElementById('settingsSendInterval').value = localStorage.getItem('ma_sendInterval') || '3';
+  document.getElementById('senderSettingsModal').classList.remove('hidden');
+}
+function closeSenderSettings() {
+  document.getElementById('senderSettingsModal').classList.add('hidden');
+}
 function saveSenderSettings() {
-  localStorage.setItem('ma_fromEmail',   document.getElementById('fromEmail')?.value.trim() || document.getElementById('nlFromEmail')?.value.trim() || '');
-  localStorage.setItem('ma_senderName',  document.getElementById('senderName')?.value.trim() || document.getElementById('nlSenderName')?.value.trim() || '');
+  const fromEmail    = document.getElementById('settingsFromEmail').value.trim();
+  const senderName   = document.getElementById('settingsSenderName').value.trim();
+  const sendInterval = document.getElementById('settingsSendInterval').value || '3';
+  localStorage.setItem('ma_fromEmail',    fromEmail);
+  localStorage.setItem('ma_senderName',   senderName);
+  localStorage.setItem('ma_sendInterval', sendInterval);
+  updateSenderDisplays(fromEmail, senderName);
+  // Sync interval inputs
+  ['sendInterval','nlSendInterval'].forEach(id => { const el = document.getElementById(id); if (el) el.value = sendInterval; });
+  closeSenderSettings();
+  showToast('設定を保存しました', 'success');
+}
+function updateSenderDisplays(fromEmail, senderName) {
+  const loginEmail = state.userEmail;
+  const displayFrom = fromEmail || loginEmail;
+  ['dispFromEmail','nlDispFromEmail'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = displayFrom; });
+  ['dispSenderName','nlDispSenderName'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = senderName || '（未設定）'; });
 }
 
 // ============================================================
@@ -2126,8 +2179,8 @@ async function sendEmails(recipients) {
 
   const subject    = document.getElementById('emailSubject').value;
   const body       = document.getElementById('emailBody').value;
-  const senderName = document.getElementById('senderName').value.trim();
-  const fromEmail  = document.getElementById('fromEmail').value.trim() || state.userEmail;
+  const senderName = localStorage.getItem('ma_senderName') || '';
+  const fromEmail  = localStorage.getItem('ma_fromEmail')  || state.userEmail;
   const interval   = parseInt(document.getElementById('sendInterval').value) || 3;
 
   let successCount = 0, errorCount = 0;
@@ -2163,7 +2216,9 @@ async function sendEmails(recipients) {
 
 async function sendSingleEmail(to, subject, bodyText, senderName, fromEmail) {
   const sendFrom = fromEmail || state.userEmail;
-  const from = senderName ? `${senderName} <${sendFrom}>` : sendFrom;
+  // RFC 2047: encode non-ASCII display name to avoid garbled text in email clients
+  const encodeHeader = s => `=?UTF-8?B?${btoa(unescape(encodeURIComponent(s)))}?=`;
+  const from = senderName ? `${encodeHeader(senderName)} <${sendFrom}>` : sendFrom;
   const makeRaw = (parts) => {
     const raw = parts.join('\r\n');
     return btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -2453,8 +2508,8 @@ async function nlSendEmails(recipients) {
 
   const subject    = document.getElementById('nlEmailSubject').value;
   const body       = document.getElementById('nlEmailBody').value;
-  const senderName = document.getElementById('nlSenderName').value.trim();
-  const fromEmail  = document.getElementById('nlFromEmail').value.trim() || state.userEmail;
+  const senderName = localStorage.getItem('ma_senderName') || '';
+  const fromEmail  = localStorage.getItem('ma_fromEmail')  || state.userEmail;
   const interval   = parseInt(document.getElementById('nlSendInterval').value) || 3;
 
   let successCount = 0, errorCount = 0;
