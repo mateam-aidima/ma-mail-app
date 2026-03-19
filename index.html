@@ -428,7 +428,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
           <div class="form-group" style="flex:1;min-width:120px;"><label style="font-size:11px;">タイミング</label><input type="text" id="tmplTiming" placeholder="初回アプローチ"></div>
         </div>
         <div class="form-group"><label style="font-size:11px;">件名</label><input type="text" id="tmplSubject" placeholder="【案件ご紹介】..."></div>
-        <div class="form-group"><label style="font-size:11px;">本文（{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は自動置換）</label><textarea id="tmplBody" style="min-height:140px;"></textarea></div>
+        <div class="form-group"><label style="font-size:11px;">本文（{{宛名}} {{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は自動置換）</label><textarea id="tmplBody" style="min-height:140px;"></textarea></div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-primary btn-sm" onclick="saveTemplateEdit()">保存</button>
           <button class="btn btn-outline btn-sm" onclick="cancelTemplateEdit()">キャンセル</button>
@@ -653,7 +653,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
             <div class="form-group">
               <label>件名</label>
               <input type="text" id="emailSubject" placeholder="【案件ご紹介】〇〇業界 M&A案件のご案内">
-              <div class="help-text">{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は送信時に自動置換されます</div>
+              <div class="help-text">{{宛名}}（企業名＋役職＋担当者名 様）{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は送信時に自動置換されます</div>
             </div>
             <div class="form-group">
               <label>本文</label>
@@ -2184,9 +2184,17 @@ function updatePreview() {
     document.getElementById('previewAttachment').classList.add('hidden');
   }
 }
+function buildSalutation(c) {
+  const company = c.companyName || '';
+  const role    = c.role || '';
+  const name    = c.name || '';
+  const nameStr = role ? `${role} ${name}` : name;
+  return nameStr ? `${company}\n${nameStr} 様` : company;
+}
 function replacePlaceholders(text, c) {
   const p = state.selectedPJ || {};
   return text
+    .replace(/\{\{宛名\}\}/g,     buildSalutation(c))
     .replace(/\{\{企業名\}\}/g,   c.companyName)
     .replace(/\{\{担当者名\}\}/g, c.name)
     .replace(/\{\{役職\}\}/g,     c.role)
@@ -2511,6 +2519,7 @@ function nlRenderSelectedPJPreview() {
 
 function nlReplacePlaceholders(text, c) {
   return text
+    .replace(/\{\{宛名\}\}/g,     buildSalutation(c))
     .replace(/\{\{企業名\}\}/g,   c.companyName || '')
     .replace(/\{\{担当者名\}\}/g, c.name || '')
     .replace(/\{\{役職\}\}/g,     c.role || '')
