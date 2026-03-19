@@ -159,6 +159,15 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
 .action-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; margin-top: 14px; border-top: 1px solid var(--gray-200); }
 .sender-info { background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
 .hidden { display: none !important; }
+/* Follow-up badges */
+.badge-followup-未対応 { background: #f3f4f6; color: #6b7280; }
+.badge-followup-興味あり { background: #dcfce7; color: #16a34a; }
+.badge-followup-検討中 { background: #dbeafe; color: #1d4ed8; }
+.badge-followup-見送り { background: #fee2e2; color: #dc2626; }
+/* OptOut row */
+tr.optout-row td { background: #f9fafb !important; color: #9ca3af; }
+tr.optout-row:hover td { background: #f3f4f6 !important; }
+.badge-optout { background: #fee2e2; color: #dc2626; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--gray-100); }
 ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
@@ -242,6 +251,13 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
       <div class="form-group"><label>案件名</label><input type="text" id="newPJName" placeholder="例：製造業 売上3億円 M&A案件"></div>
       <div class="form-group"><label>業種</label><input type="text" id="newPJIndustry" placeholder="例：製造業"></div>
       <div class="form-group"><label>概要（ノンネーム情報）</label><textarea id="newPJDesc" style="min-height:80px;" placeholder="例：関西の製造業。売上3億、利益5000万。後継者不在が売却理由。"></textarea></div>
+      <div style="display:flex;gap:10px;">
+        <div class="form-group" style="flex:1;"><label>売上規模</label><input type="text" id="newPJRevenue" placeholder="例：3億円"></div>
+        <div class="form-group" style="flex:1;"><label>利益規模</label><input type="text" id="newPJProfit" placeholder="例：5000万円"></div>
+      </div>
+      <div class="form-group"><label>所在地</label><input type="text" id="newPJLocation" placeholder="例：大阪府"></div>
+      <div class="form-group"><label>売却理由</label><input type="text" id="newPJSellReason" placeholder="例：後継者不在"></div>
+      <div class="form-group"><label>希望条件</label><input type="text" id="newPJConditions" placeholder="例：従業員の雇用継続希望"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeNewPJModal()">キャンセル</button>
@@ -318,6 +334,14 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
           <button type="button" class="btn btn-outline btn-sm" onclick="addContactRow('addContactsArea')">＋ 連絡先を追加</button>
         </div>
         <div id="addContactsArea"></div>
+        <hr style="margin:14px 0;border:none;border-top:1px solid var(--gray-200);">
+        <div style="display:flex;gap:10px;align-items:flex-end;">
+          <div class="form-group" style="flex:1;"><label>フォローアップ状況</label><select id="addFollowUpStatus"><option value="未対応">未対応</option><option value="興味あり">興味あり</option><option value="検討中">検討中</option><option value="見送り">見送り</option></select></div>
+          <div class="form-group" style="flex:1;"><label>フォロー日</label><input type="date" id="addFollowUpDate"></div>
+        </div>
+        <div class="form-group"><label>フォローメモ</label><textarea id="addFollowUpMemo" style="min-height:60px;" placeholder="フォローアップの内容を記入..."></textarea></div>
+        <div class="form-group"><label>メモ・備考</label><textarea id="addMemo" style="min-height:60px;" placeholder="自由メモ..."></textarea></div>
+        <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="addOptOut" style="width:15px;height:15px;">配信停止（このアドレスへの送信を停止）</label></div>
         <button class="btn btn-primary" onclick="addBuyerManually()">➕ 追加する</button>
       </div>
     </div>
@@ -342,7 +366,7 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
           <div class="form-group" style="flex:1;min-width:120px;"><label style="font-size:11px;">タイミング</label><input type="text" id="tmplTiming" placeholder="初回アプローチ"></div>
         </div>
         <div class="form-group"><label style="font-size:11px;">件名</label><input type="text" id="tmplSubject" placeholder="【案件ご紹介】..."></div>
-        <div class="form-group"><label style="font-size:11px;">本文（{{企業名}} {{担当者名}} {{役職}} {{業種}} は自動置換）</label><textarea id="tmplBody" style="min-height:140px;"></textarea></div>
+        <div class="form-group"><label style="font-size:11px;">本文（{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{案件名}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は自動置換）</label><textarea id="tmplBody" style="min-height:140px;"></textarea></div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-primary btn-sm" onclick="saveTemplateEdit()">保存</button>
           <button class="btn btn-outline btn-sm" onclick="cancelTemplateEdit()">キャンセル</button>
@@ -384,10 +408,43 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
         <button type="button" class="btn btn-outline btn-sm" onclick="addContactRow('editContactsArea')">＋ 連絡先を追加</button>
       </div>
       <div id="editContactsArea"></div>
+      <hr style="margin:14px 0;border:none;border-top:1px solid var(--gray-200);">
+      <div style="display:flex;gap:10px;align-items:flex-end;">
+        <div class="form-group" style="flex:1;"><label>フォローアップ状況</label><select id="editFollowUpStatus"><option value="未対応">未対応</option><option value="興味あり">興味あり</option><option value="検討中">検討中</option><option value="見送り">見送り</option></select></div>
+        <div class="form-group" style="flex:1;"><label>フォロー日</label><input type="date" id="editFollowUpDate"></div>
+      </div>
+      <div class="form-group"><label>フォローメモ</label><textarea id="editFollowUpMemo" style="min-height:60px;" placeholder="フォローアップの内容を記入..."></textarea></div>
+      <div class="form-group"><label>メモ・備考</label><textarea id="editMemo" style="min-height:60px;" placeholder="自由メモ..."></textarea></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="editOptOut" style="width:15px;height:15px;">配信停止（このアドレスへの送信を停止）</label></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeEditBuyer()">キャンセル</button>
       <button class="btn btn-primary" onclick="saveEditBuyer()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- SENT HISTORY MODAL -->
+<div id="sentHistoryModal" class="modal-overlay hidden" onclick="event.target===this&&closeSentHistory()">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>📋 送信履歴</h3>
+      <button class="close-btn" onclick="closeSentHistory()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="sentHistorySearch" placeholder="🔍 企業名・メール・PJで絞り込み..." oninput="renderSentHistoryTable()" style="flex:1;min-width:200px;padding:7px 10px;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:13px;">
+        <button class="btn btn-outline btn-sm" onclick="exportSentHistoryCsv()">📤 CSVエクスポート</button>
+      </div>
+      <div class="table-wrapper" style="max-height:400px;">
+        <table>
+          <thead><tr><th>日時</th><th>PJ</th><th>企業名</th><th>メールアドレス</th></tr></thead>
+          <tbody id="sentHistoryBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeSentHistory()">閉じる</button>
     </div>
   </div>
 </div>
@@ -398,6 +455,7 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
     <h1>📧 M&A 案件メール配信システム</h1>
     <div class="header-right">
       <span class="user-info" id="userEmail"></span>
+      <button class="btn-logout" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:6px 14px;border-radius:var(--radius);cursor:pointer;font-size:13px;" onclick="showSentHistory()">📋 送信履歴</button>
       <button class="btn-logout" onclick="handleLogout()">ログアウト</button>
     </div>
   </div>
@@ -462,6 +520,18 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
               <option value="unsent">未送信のみ</option>
               <option value="sent">送信済みのみ</option>
             </select>
+            <select id="followUpFilter" onchange="filterTable()">
+              <option value="">フォロー全て</option>
+              <option value="未対応">未対応</option>
+              <option value="興味あり">興味あり</option>
+              <option value="検討中">検討中</option>
+              <option value="見送り">見送り</option>
+            </select>
+            <select id="optOutFilter" onchange="filterTable()">
+              <option value="exclude">配信停止を除く</option>
+              <option value="all">全て表示</option>
+              <option value="only">配信停止のみ</option>
+            </select>
             <button class="btn btn-outline btn-sm" onclick="selectAllVisible()">全選択</button>
             <button class="btn btn-outline btn-sm" onclick="deselectAll()">全解除</button>
           </div>
@@ -479,10 +549,13 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
                   <th>役職</th>
                   <th>メールアドレス</th>
                   <th>送信状態</th>
+                  <th>フォロー</th>
+                  <th>配停</th>
+                  <th>メモ</th>
                 </tr>
               </thead>
               <tbody id="buyerTableBody">
-                <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gray-400);">「📊 データ管理」からCSVをインポートするか、手動で買い手を追加してください</td></tr>
+                <tr><td colspan="12" style="text-align:center;padding:40px;color:var(--gray-400);">「📊 データ管理」からCSVをインポートするか、手動で買い手を追加してください</td></tr>
               </tbody>
             </table>
           </div>
@@ -516,7 +589,7 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
             <div class="form-group">
               <label>件名</label>
               <input type="text" id="emailSubject" placeholder="【案件ご紹介】〇〇業界 M&A案件のご案内">
-              <div class="help-text">{{企業名}} {{担当者名}} {{役職}} {{業種}} は送信時に自動置換されます</div>
+              <div class="help-text">{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{案件名}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は送信時に自動置換されます</div>
             </div>
             <div class="form-group">
               <label>本文</label>
@@ -952,6 +1025,9 @@ function rebuildFlatContacts() {
         name: c.name || '',
         role: c.role || '',
         email: c.email || '',
+        followUp: b.followUp || { status: '未対応', memo: '', date: '' },
+        optOut: b.optOut || false,
+        memo: b.memo || '',
       });
     });
   }
@@ -1109,6 +1185,14 @@ function showEditBuyer(id) {
   area.innerHTML = '';
   const contacts = b.contacts && b.contacts.length ? b.contacts : [{ name:'', role:'', email:'' }];
   contacts.forEach(c => addContactRow('editContactsArea', c));
+  // followUp
+  const fu = b.followUp || { status: '未対応', memo: '', date: '' };
+  document.getElementById('editFollowUpStatus').value = fu.status || '未対応';
+  document.getElementById('editFollowUpMemo').value   = fu.memo || '';
+  document.getElementById('editFollowUpDate').value   = fu.date || '';
+  // memo & optOut
+  document.getElementById('editMemo').value   = b.memo || '';
+  document.getElementById('editOptOut').checked = b.optOut || false;
   document.getElementById('editBuyerModal').classList.remove('hidden');
 }
 function closeEditBuyer() {
@@ -1129,6 +1213,13 @@ function saveEditBuyer() {
     caseNo:        document.getElementById('editCaseNo').value.trim(),
     contactMethod: document.getElementById('editContactMethod').value,
     contacts,
+    followUp: {
+      status: document.getElementById('editFollowUpStatus').value,
+      memo:   document.getElementById('editFollowUpMemo').value,
+      date:   document.getElementById('editFollowUpDate').value,
+    },
+    memo:    document.getElementById('editMemo').value,
+    optOut:  document.getElementById('editOptOut').checked,
   };
   saveBuyers();
   rebuildFlatContacts();
@@ -1176,6 +1267,13 @@ function addBuyerManually() {
     industry: document.getElementById('addIndustry').value.trim(),
     contactMethod: document.getElementById('addContactMethod').value,
     contacts,
+    followUp: {
+      status: document.getElementById('addFollowUpStatus').value || '未対応',
+      memo:   document.getElementById('addFollowUpMemo').value || '',
+      date:   document.getElementById('addFollowUpDate').value || '',
+    },
+    memo:   document.getElementById('addMemo').value || '',
+    optOut: document.getElementById('addOptOut').checked,
   };
   state.buyers.push(buyer);
   saveBuyers();
@@ -1183,7 +1281,10 @@ function addBuyerManually() {
   populateFilters();
   filterTable();
   // reset form
-  ['addCompanyName','addIndustry','addCaseNo'].forEach(id => { document.getElementById(id).value = ''; });
+  ['addCompanyName','addIndustry','addCaseNo','addFollowUpMemo','addMemo'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('addFollowUpStatus').value = '未対応';
+  document.getElementById('addFollowUpDate').value = '';
+  document.getElementById('addOptOut').checked = false;
   populateMethodSelect(document.getElementById('addContactMethod'), '');
   const area = document.getElementById('addContactsArea');
   area.innerHTML = '';
@@ -1332,7 +1433,7 @@ function exportBuyersCsv() {
   for (let i = 1; i <= maxContacts; i++) {
     contactHeaders.push(`連絡先${i}_名前`, `連絡先${i}_役職`, `連絡先${i}_メール`);
   }
-  const headers = ['企業名','業種','案件No','連絡方法', ...contactHeaders];
+  const headers = ['企業名','業種','案件No','連絡方法', ...contactHeaders, 'フォロー状況','フォロー日','フォローメモ','メモ','配信停止'];
   const rows = [headers];
   for (const b of state.buyers) {
     const cs = b.contacts || [];
@@ -1340,7 +1441,9 @@ function exportBuyersCsv() {
     for (let i = 0; i < maxContacts; i++) {
       contactCols.push((cs[i]||{}).name||'', (cs[i]||{}).role||'', (cs[i]||{}).email||'');
     }
-    rows.push([b.companyName, b.industry, b.caseNo, b.contactMethod, ...contactCols]);
+    const fu = b.followUp || { status: '', memo: '', date: '' };
+    rows.push([b.companyName, b.industry, b.caseNo, b.contactMethod, ...contactCols,
+      fu.status||'', fu.date||'', fu.memo||'', b.memo||'', b.optOut ? '停止' : '']);
   }
   const csvText = '\uFEFF' + rows.map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
@@ -1408,14 +1511,22 @@ function onPJChange() {
   state.selectedPJ = state.pjList.find(p => p.pjId === pjId) || null;
   const detail = document.getElementById('pjDetail');
   if (state.selectedPJ) {
+    const p = state.selectedPJ;
     detail.classList.remove('hidden');
+    let extraHtml = '';
+    if (p.revenue)    extraHtml += `<span style="font-size:12px;color:var(--gray-600);">売上：${escHtml(p.revenue)}</span>`;
+    if (p.profit)     extraHtml += `<span style="font-size:12px;color:var(--gray-600);">利益：${escHtml(p.profit)}</span>`;
+    if (p.location)   extraHtml += `<span style="font-size:12px;color:var(--gray-600);">所在地：${escHtml(p.location)}</span>`;
+    if (p.sellReason) extraHtml += `<span style="font-size:12px;color:var(--gray-600);">売却理由：${escHtml(p.sellReason)}</span>`;
+    if (p.conditions) extraHtml += `<span style="font-size:12px;color:var(--gray-600);">希望条件：${escHtml(p.conditions)}</span>`;
     document.getElementById('pjInfoBox').innerHTML =
-      `<span class="pj-num">${escHtml(state.selectedPJ.pjId)}</span>` +
-      `<span style="font-weight:600;">${escHtml(state.selectedPJ.pjName)}</span>` +
-      (state.selectedPJ.industry ? `<span class="badge badge-primary">${escHtml(state.selectedPJ.industry)}</span>` : '') +
-      (state.selectedPJ.desc ? `<span style="color:var(--gray-500);font-size:12px;">${escHtml(state.selectedPJ.desc)}</span>` : '');
+      `<span class="pj-num">${escHtml(p.pjId)}</span>` +
+      `<span style="font-weight:600;">${escHtml(p.pjName)}</span>` +
+      (p.industry ? `<span class="badge badge-primary">${escHtml(p.industry)}</span>` : '') +
+      (p.desc ? `<span style="color:var(--gray-500);font-size:12px;">${escHtml(p.desc)}</span>` : '') +
+      extraHtml;
     document.getElementById('pjSendInfo').innerHTML =
-      `📁 PJ: <b>${escHtml(state.selectedPJ.pjId)} ${escHtml(state.selectedPJ.pjName)}</b> を送信します`;
+      `📁 PJ: <b>${escHtml(p.pjId)} ${escHtml(p.pjName)}</b> を送信します`;
   } else {
     detail.classList.add('hidden');
   }
@@ -1426,20 +1537,25 @@ function showNewPJModal() {
   const nums = state.pjList.map(p => parseInt((p.pjId.match(/\d+/) || ['0'])[0])).filter(n => !isNaN(n));
   const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
   document.getElementById('newPJNum').value = `PJ-${String(next).padStart(3,'0')}`;
-  ['newPJName','newPJIndustry','newPJDesc'].forEach(id => { document.getElementById(id).value = ''; });
+  ['newPJName','newPJIndustry','newPJDesc','newPJRevenue','newPJProfit','newPJLocation','newPJSellReason','newPJConditions'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('newPJModal').classList.remove('hidden');
 }
 function closeNewPJModal() { document.getElementById('newPJModal').classList.add('hidden'); }
 
 function saveNewPJ() {
-  const pjId   = document.getElementById('newPJNum').value.trim();
-  const pjName = document.getElementById('newPJName').value.trim();
-  const ind    = document.getElementById('newPJIndustry').value.trim();
-  const desc   = document.getElementById('newPJDesc').value.trim();
+  const pjId      = document.getElementById('newPJNum').value.trim();
+  const pjName    = document.getElementById('newPJName').value.trim();
+  const ind       = document.getElementById('newPJIndustry').value.trim();
+  const desc      = document.getElementById('newPJDesc').value.trim();
+  const revenue   = document.getElementById('newPJRevenue').value.trim();
+  const profit    = document.getElementById('newPJProfit').value.trim();
+  const location  = document.getElementById('newPJLocation').value.trim();
+  const sellReason= document.getElementById('newPJSellReason').value.trim();
+  const conditions= document.getElementById('newPJConditions').value.trim();
   if (!pjId)   { showToast('PJ番号を入力してください', 'error'); return; }
   if (!pjName) { showToast('案件名を入力してください', 'error'); return; }
   const now = new Date().toLocaleDateString('ja-JP');
-  state.pjList.push({ pjId, pjName, industry: ind, desc, date: now });
+  state.pjList.push({ pjId, pjName, industry: ind, desc, revenue, profit, location, sellReason, conditions, date: now });
   savePJList();
   renderPJSelect();
   nlRenderPJList();
@@ -1592,44 +1708,60 @@ function populateFilters() {
 }
 
 function filterTable() {
-  const search     = document.getElementById('searchInput').value.toLowerCase();
-  const industry   = document.getElementById('industryFilter').value;
-  const sentFilter = document.getElementById('sentFilter').value;
+  const search        = document.getElementById('searchInput').value.toLowerCase();
+  const industry      = document.getElementById('industryFilter').value;
+  const sentFilter    = document.getElementById('sentFilter').value;
+  const followUpFilter= document.getElementById('followUpFilter')?.value || '';
+  const optOutFilter  = document.getElementById('optOutFilter')?.value || 'exclude';
 
   state.filteredContacts = state.flatContacts.filter(c => {
     if (search && !c.companyName.toLowerCase().includes(search) && !c.name.toLowerCase().includes(search)) return false;
     if (industry && c.industry !== industry) return false;
     if (sentFilter === 'unsent' && isSentToDeal(c.email)) return false;
     if (sentFilter === 'sent'   && !isSentToDeal(c.email)) return false;
+    if (followUpFilter && (c.followUp||{}).status !== followUpFilter) return false;
+    if (optOutFilter === 'exclude' && c.optOut) return false;
+    if (optOutFilter === 'only'    && !c.optOut) return false;
     return true;
   });
   renderTable();
 }
 
+function followUpBadgeHtml(followUp) {
+  const fu = followUp || { status: '未対応' };
+  const status = fu.status || '未対応';
+  return `<span class="badge badge-followup-${status}">${escHtml(status)}</span>`;
+}
+
 function renderTable() {
   const tbody = document.getElementById('buyerTableBody');
   if (state.flatContacts.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gray-400);">「📊 データ管理」からCSVをインポートするか、手動で買い手を追加してください</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--gray-400);">「📊 データ管理」からCSVをインポートするか、手動で買い手を追加してください</td></tr>';
   } else if (state.filteredContacts.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gray-400);">該当する候補が見つかりません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--gray-400);">該当する候補が見つかりません</td></tr>';
   } else {
     tbody.innerHTML = state.filteredContacts.map(c => {
       const sent = isSentToDeal(c.email);
       const isSelected = state.selectedKeys.has(c.key);
-      const rowClass = isSelected ? 'selected' : (sent ? 'sent-row' : '');
+      const optOutClass = c.optOut ? 'optout-row' : '';
+      const rowClass = isSelected ? 'selected' : (sent ? 'sent-row' : optOutClass);
       const sentBadge = !state.selectedPJ ? '' :
         sent ? '<span class="badge badge-sent">送信済</span>'
              : '<span class="badge badge-unsent">未送信</span>';
+      const memoShort = (c.memo||'').length > 30 ? (c.memo||'').substring(0,30)+'...' : (c.memo||'');
       return `<tr class="${rowClass}" onclick="toggleRow('${c.key}',event)">
         <td class="cb-cell"><input type="checkbox" ${isSelected?'checked':''} onchange="toggleSelect('${c.key}')" onclick="event.stopPropagation()"></td>
         <td>${escHtml(c.caseNo)}</td>
-        <td class="company-cell" title="${escHtml(c.companyName)}"><strong>${escHtml(c.companyName)}</strong></td>
+        <td class="company-cell" title="${escHtml(c.companyName)}"><strong>${escHtml(c.companyName)}</strong>${c.optOut?'<span class="badge badge-optout" style="margin-left:4px;font-size:10px;">配停</span>':''}</td>
         <td>${escHtml(c.industry)}</td>
         <td>${methodBadgeHtml(c.contactMethod)}</td>
         <td>${escHtml(c.name)}</td>
         <td>${escHtml(c.role)}</td>
         <td class="email-cell" title="${escHtml(c.email)}">${c.email || '<span style="color:var(--gray-400)">未登録</span>'}</td>
         <td>${sentBadge}</td>
+        <td>${followUpBadgeHtml(c.followUp)}</td>
+        <td style="text-align:center;"><button class="btn btn-sm" style="padding:2px 6px;font-size:14px;background:none;border:none;cursor:pointer;" onclick="event.stopPropagation();toggleOptOut('${c.buyerId}')" title="${c.optOut?'配信停止中（クリックで解除）':'クリックで配信停止'}">${c.optOut?'🚫':'✅'}</button></td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(c.memo||'')}">${escHtml(memoShort)}</td>
       </tr>`;
     }).join('');
   }
@@ -1648,6 +1780,7 @@ function toggleSelect(key) {
   } else {
     const contact = state.flatContacts.find(c => c.key === key);
     if (!contact || !contact.email) { showToast('メールアドレスが未登録のため選択できません', 'error'); return; }
+    if (contact.optOut) { showToast(`${contact.companyName} は配信停止中のため選択できません`, 'error'); return; }
     state.selectedKeys.add(key);
   }
   renderTable();
@@ -1767,11 +1900,19 @@ function updatePreview() {
   }
 }
 function replacePlaceholders(text, c) {
+  const p = state.selectedPJ || {};
   return text
     .replace(/\{\{企業名\}\}/g,   c.companyName)
     .replace(/\{\{担当者名\}\}/g, c.name)
     .replace(/\{\{役職\}\}/g,     c.role)
-    .replace(/\{\{業種\}\}/g,     c.industry);
+    .replace(/\{\{業種\}\}/g,     c.industry)
+    .replace(/\{\{PJ番号\}\}/g,   p.pjId || '')
+    .replace(/\{\{案件名\}\}/g,   p.pjName || '')
+    .replace(/\{\{売上規模\}\}/g, p.revenue || '')
+    .replace(/\{\{利益規模\}\}/g, p.profit || '')
+    .replace(/\{\{所在地\}\}/g,   p.location || '')
+    .replace(/\{\{売却理由\}\}/g, p.sellReason || '')
+    .replace(/\{\{希望条件\}\}/g, p.conditions || '');
 }
 
 // ============================================================
@@ -1780,6 +1921,12 @@ function replacePlaceholders(text, c) {
 function confirmAndSend() {
   const selected = getSelectedContacts();
   if (selected.length === 0) return;
+  const optOutContacts = selected.filter(c => c.optOut);
+  if (optOutContacts.length > 0) {
+    if (!confirm(`⚠️ 以下${optOutContacts.length}件は配信停止中です：\n`
+      + optOutContacts.map(c => `・${c.companyName}（${c.name}）`).join('\n')
+      + `\n\n送信を続行しますか？`)) return;
+  }
   if (!state.selectedPJ) {
     if (!confirm(`⚠️ PJが未選択のため送信履歴が記録されません。\nこのまま${selected.length}件送信しますか？`)) return;
   } else {
@@ -2048,8 +2195,13 @@ function buildDealListText() {
   const lines = [sep];
   pjs.forEach(p => {
     lines.push(`◆ ${p.pjId}：${p.pjName}`);
-    if (p.industry) lines.push(`　業種：${p.industry}`);
-    if (p.desc)     lines.push(`　概要：${p.desc}`);
+    if (p.industry)   lines.push(`　業種：${p.industry}`);
+    if (p.revenue)    lines.push(`　売上規模：${p.revenue}`);
+    if (p.profit)     lines.push(`　利益規模：${p.profit}`);
+    if (p.location)   lines.push(`　所在地：${p.location}`);
+    if (p.sellReason) lines.push(`　売却理由：${p.sellReason}`);
+    if (p.conditions) lines.push(`　希望条件：${p.conditions}`);
+    if (p.desc)       lines.push(`　概要：${p.desc}`);
     lines.push('');
   });
   lines.push(sep);
@@ -2075,6 +2227,8 @@ function nlReplacePlaceholders(text, c) {
     .replace(/\{\{役職\}\}/g,     c.role || '')
     .replace(/\{\{業種\}\}/g,     c.industry || '')
     .replace(/\{\{案件一覧\}\}/g, buildDealListText());
+  // Note: PJ-specific placeholders ({{PJ番号}}, {{売上規模}}, etc.) are not replaced in newsletter
+  // mode since multiple PJs are selected - they remain as-is in the text.
 }
 
 // ============================================================
@@ -2152,6 +2306,70 @@ function nlAddLog(msg, type) {
   e.className = `log-entry ${type}`;
   e.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
   d.appendChild(e); d.scrollTop = d.scrollHeight;
+}
+
+// ============================================================
+// OPTOUT TOGGLE
+// ============================================================
+function toggleOptOut(buyerId) {
+  const idx = state.buyers.findIndex(b => b.id === buyerId);
+  if (idx === -1) return;
+  state.buyers[idx].optOut = !state.buyers[idx].optOut;
+  const newVal = state.buyers[idx].optOut;
+  saveBuyers();
+  rebuildFlatContacts();
+  filterTable();
+  showToast(`${state.buyers[idx].companyName} を${newVal ? '配信停止' : '配信再開'}しました`, newVal ? 'info' : 'success');
+}
+
+// ============================================================
+// SENT HISTORY SCREEN
+// ============================================================
+function showSentHistory() {
+  renderSentHistoryTable();
+  document.getElementById('sentHistoryModal').classList.remove('hidden');
+}
+function closeSentHistory() {
+  document.getElementById('sentHistoryModal').classList.add('hidden');
+}
+function renderSentHistoryTable() {
+  const q = (document.getElementById('sentHistorySearch')?.value || '').toLowerCase();
+  const filtered = state.sentHistory.filter(h =>
+    !q || (h.companyName||'').toLowerCase().includes(q) ||
+    (h.email||'').toLowerCase().includes(q) ||
+    (h.pjId||'').toLowerCase().includes(q) ||
+    (h.pjName||'').toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('sentHistoryBody');
+  if (!tbody) return;
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--gray-400);">送信履歴がありません</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.slice().reverse().map(h => `<tr>
+    <td style="white-space:nowrap;font-size:12px;">${escHtml(h.date)}</td>
+    <td style="white-space:nowrap;">${escHtml(h.pjId)} ${escHtml(h.pjName||'')}</td>
+    <td>${escHtml(h.companyName)}</td>
+    <td class="email-cell" style="font-family:monospace;font-size:12px;">${escHtml(h.email)}</td>
+  </tr>`).join('');
+}
+function exportSentHistoryCsv() {
+  const q = (document.getElementById('sentHistorySearch')?.value || '').toLowerCase();
+  const filtered = state.sentHistory.filter(h =>
+    !q || (h.companyName||'').toLowerCase().includes(q) ||
+    (h.email||'').toLowerCase().includes(q) ||
+    (h.pjId||'').toLowerCase().includes(q) ||
+    (h.pjName||'').toLowerCase().includes(q)
+  );
+  if (filtered.length === 0) { showToast('エクスポートするデータがありません', 'error'); return; }
+  const headers = ['日時','PJ番号','PJ名','企業名','メールアドレス'];
+  const rows = [headers, ...filtered.map(h => [h.date, h.pjId, h.pjName||'', h.companyName, h.email])];
+  const csvText = '\uFEFF' + rows.map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `sent_history_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+  a.click(); URL.revokeObjectURL(url);
 }
 
 // ============================================================
