@@ -235,18 +235,37 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
   </div>
 </div>
 
-<!-- NEW PJ MODAL -->
+<!-- PJ MANAGEMENT MODAL -->
+<div id="pjMgmtModal" class="modal-overlay hidden" onclick="event.target===this&&closePJMgmt()">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>📁 PJ一覧・管理</h3>
+      <button class="close-btn" onclick="closePJMgmt()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+        <button class="btn btn-primary btn-sm" onclick="closePJMgmt();showNewPJModal()">＋ 新規PJ作成</button>
+      </div>
+      <div id="pjMgmtList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closePJMgmt()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW / EDIT PJ MODAL -->
 <div id="newPJModal" class="modal-overlay hidden" onclick="event.target===this&&closeNewPJModal()">
   <div class="modal">
     <div class="modal-header">
-      <h3>📁 新規PJ作成</h3>
+      <h3 id="pjModalTitle">📁 新規PJ作成</h3>
       <button class="close-btn" onclick="closeNewPJModal()">&times;</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
         <label>PJ名（プロジェクト名）</label>
         <input type="text" id="newPJNum" placeholder="例：PJ-Japan" style="font-weight:700;font-size:16px;">
-        <div class="help-text">アルファベットのプロジェクト名を入力してください（例：PJ-Japan、PJ-Stone）</div>
+        <div class="help-text" id="pjNumHelp">アルファベットのプロジェクト名を入力してください（例：PJ-Japan、PJ-Stone）</div>
       </div>
       <div class="form-group"><label>業種</label><input type="text" id="newPJIndustry" placeholder="例：製造業"></div>
       <div class="form-group"><label>概要（ノンネーム情報）</label><textarea id="newPJDesc" style="min-height:80px;" placeholder="例：関西の製造業。売上3億、利益5000万。後継者不在が売却理由。"></textarea></div>
@@ -260,7 +279,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeNewPJModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="saveNewPJ()">作成して選択</button>
+      <button class="btn btn-primary" id="pjModalSaveBtn" onclick="saveNewPJ()">作成して選択</button>
     </div>
   </div>
 </div>
@@ -494,6 +513,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
                 <option value="">-- PJを選択してください --</option>
               </select>
               <button class="btn btn-primary btn-sm" onclick="showNewPJModal()">＋ 新規PJ作成</button>
+              <button class="btn btn-outline btn-sm" onclick="showPJMgmt()">📋 PJ一覧・編集</button>
             </div>
             <div id="pjDetail" class="hidden">
               <div class="pj-info" id="pjInfoBox"></div>
@@ -1572,12 +1592,98 @@ function onPJChange() {
   filterTable();
 }
 
+// ============================================================
+// PJ MANAGEMENT MODAL
+// ============================================================
+function showPJMgmt() {
+  renderPJMgmtList();
+  document.getElementById('pjMgmtModal').classList.remove('hidden');
+}
+function closePJMgmt() { document.getElementById('pjMgmtModal').classList.add('hidden'); }
+
+function renderPJMgmtList() {
+  const area = document.getElementById('pjMgmtList');
+  if (state.pjList.length === 0) {
+    area.innerHTML = '<p style="text-align:center;padding:24px;color:var(--gray-400);">PJがありません。「＋ 新規PJ作成」から登録してください。</p>';
+    return;
+  }
+  area.innerHTML = state.pjList.map(p => {
+    const hasPdf = !!state.pjPdfs[p.pjId];
+    return `<div style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;background:white;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-weight:700;font-size:15px;color:var(--primary);flex:1;">${escHtml(p.pjId)}</span>
+        ${p.industry ? `<span class="badge badge-primary">${escHtml(p.industry)}</span>` : ''}
+        ${hasPdf ? `<span class="badge badge-success">📄 PDF保存済</span>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="closePJMgmt();showEditPJModal('${escHtml(p.pjId)}')">✏️ 編集</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePJ('${escHtml(p.pjId)}')">🗑️ 削除</button>
+      </div>
+      ${p.desc ? `<div style="font-size:12px;color:var(--gray-500);margin-top:6px;white-space:pre-wrap;">${escHtml(p.desc)}</div>` : ''}
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--gray-600);">
+        ${p.revenue ? `<span>売上：${escHtml(p.revenue)}</span>` : ''}
+        ${p.profit  ? `<span>利益：${escHtml(p.profit)}</span>`  : ''}
+        ${p.location ? `<span>所在地：${escHtml(p.location)}</span>` : ''}
+        ${p.sellReason ? `<span>売却理由：${escHtml(p.sellReason)}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deletePJ(pjId) {
+  const p = state.pjList.find(p => p.pjId === pjId);
+  if (!p) return;
+  if (!confirm(`「${pjId}」を削除しますか？\nPDFデータも削除されます。`)) return;
+  state.pjList = state.pjList.filter(p => p.pjId !== pjId);
+  delete state.pjPdfs[pjId];
+  savePJList(); savePjPdfs();
+  renderPJSelect(); renderPJMgmtList(); nlRenderPJList();
+  if (state.selectedPJ?.pjId === pjId) {
+    state.selectedPJ = null;
+    document.getElementById('pjSelect').value = '';
+    document.getElementById('pjDetail').classList.add('hidden');
+    filterTable();
+  }
+  showToast(`${pjId} を削除しました`, 'success');
+}
+
+let editingPJId = null;
+
 function showNewPJModal() {
+  editingPJId = null;
+  document.getElementById('pjModalTitle').textContent = '📁 新規PJ作成';
+  document.getElementById('pjModalSaveBtn').textContent = '作成して選択';
+  document.getElementById('newPJNum').readOnly = false;
   document.getElementById('newPJNum').value = '';
+  document.getElementById('pjNumHelp').textContent = 'アルファベットのプロジェクト名を入力してください（例：PJ-Japan、PJ-Stone）';
   ['newPJIndustry','newPJDesc','newPJRevenue','newPJProfit','newPJLocation','newPJSellReason','newPJConditions'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('newPJModal').classList.remove('hidden');
 }
-function closeNewPJModal() { document.getElementById('newPJModal').classList.add('hidden'); }
+
+function showEditPJModal(pjId) {
+  const p = state.pjList.find(p => p.pjId === pjId);
+  if (!p) return;
+  editingPJId = pjId;
+  document.getElementById('pjModalTitle').textContent = '✏️ PJ編集';
+  document.getElementById('pjModalSaveBtn').textContent = '保存';
+  document.getElementById('newPJNum').readOnly = true;
+  document.getElementById('newPJNum').style.background = 'var(--gray-100)';
+  document.getElementById('pjNumHelp').textContent = 'PJ名は変更できません（識別子として使用されています）';
+  document.getElementById('newPJNum').value        = p.pjId;
+  document.getElementById('newPJIndustry').value   = p.industry || '';
+  document.getElementById('newPJDesc').value       = p.desc || '';
+  document.getElementById('newPJRevenue').value    = p.revenue || '';
+  document.getElementById('newPJProfit').value     = p.profit || '';
+  document.getElementById('newPJLocation').value   = p.location || '';
+  document.getElementById('newPJSellReason').value = p.sellReason || '';
+  document.getElementById('newPJConditions').value = p.conditions || '';
+  document.getElementById('newPJModal').classList.remove('hidden');
+}
+
+function closeNewPJModal() {
+  document.getElementById('newPJModal').classList.add('hidden');
+  document.getElementById('newPJNum').readOnly = false;
+  document.getElementById('newPJNum').style.background = '';
+  editingPJId = null;
+}
 
 function saveNewPJ() {
   const pjId      = document.getElementById('newPJNum').value.trim();
@@ -1589,16 +1695,35 @@ function saveNewPJ() {
   const sellReason= document.getElementById('newPJSellReason').value.trim();
   const conditions= document.getElementById('newPJConditions').value.trim();
   if (!pjId) { showToast('PJ名を入力してください', 'error'); return; }
-  if (state.pjList.some(p => p.pjId === pjId)) { showToast('同じPJ名が既に存在します', 'error'); return; }
-  const now = new Date().toLocaleDateString('ja-JP');
-  state.pjList.push({ pjId, industry: ind, desc, revenue, profit, location, sellReason, conditions, date: now });
-  savePJList();
-  renderPJSelect();
-  nlRenderPJList();
-  document.getElementById('pjSelect').value = pjId;
-  onPJChange();
-  closeNewPJModal();
-  showToast(`${pjId} を作成しました`, 'success');
+
+  if (editingPJId) {
+    // Edit mode: update existing PJ
+    const idx = state.pjList.findIndex(p => p.pjId === editingPJId);
+    if (idx === -1) return;
+    state.pjList[idx] = { ...state.pjList[idx], industry: ind, desc, revenue, profit, location, sellReason, conditions };
+    savePJList();
+    renderPJSelect();
+    nlRenderPJList();
+    if (state.selectedPJ?.pjId === editingPJId) {
+      state.selectedPJ = state.pjList[idx];
+      onPJChange();
+      document.getElementById('pjSelect').value = editingPJId;
+    }
+    closeNewPJModal();
+    showToast(`${pjId} を更新しました`, 'success');
+  } else {
+    // Create mode
+    if (state.pjList.some(p => p.pjId === pjId)) { showToast('同じPJ名が既に存在します', 'error'); return; }
+    const now = new Date().toLocaleDateString('ja-JP');
+    state.pjList.push({ pjId, industry: ind, desc, revenue, profit, location, sellReason, conditions, date: now });
+    savePJList();
+    renderPJSelect();
+    nlRenderPJList();
+    document.getElementById('pjSelect').value = pjId;
+    onPJChange();
+    closeNewPJModal();
+    showToast(`${pjId} を作成しました`, 'success');
+  }
 }
 
 // ============================================================
