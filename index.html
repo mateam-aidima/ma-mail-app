@@ -600,10 +600,15 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
           <div class="card" style="margin-bottom:20px;">
             <div class="card-header"><h2>送信者設定</h2></div>
             <div class="card-body">
-              <div class="sender-info">ℹ️ <span id="senderEmail2"></span> から送信されます</div>
+              <div class="sender-info">ℹ️ ログイン中：<span id="senderEmail2"></span></div>
               <div class="form-group">
-                <label>差出人表示名（任意）</label>
-                <input type="text" id="senderName" placeholder="例: 株式会社アイドマ・ホールディングス M&A戦略室">
+                <label>送信元アドレス（エイリアス）</label>
+                <input type="email" id="fromEmail" placeholder="例：ma_team@mamirai-mp.jp" oninput="saveSenderSettings()">
+                <div class="help-text">Gmailの「他のアドレスでメールを送信」に登録済みのエイリアスアドレスを入力してください。空欄の場合はログイン中のアドレスで送信します。</div>
+              </div>
+              <div class="form-group">
+                <label>差出人表示名</label>
+                <input type="text" id="senderName" placeholder="例：㈱M&Aミライ・パートナーズ" oninput="saveSenderSettings()">
               </div>
               <div class="form-group">
                 <label>送信間隔（秒）</label>
@@ -778,10 +783,15 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
             <div class="card">
               <div class="card-header"><h2>送信者設定</h2></div>
               <div class="card-body">
-                <div class="sender-info">ℹ️ <span id="nlSenderEmail"></span> から送信されます</div>
+                <div class="sender-info">ℹ️ ログイン中：<span id="nlSenderEmail"></span></div>
                 <div class="form-group">
-                  <label>差出人表示名（任意）</label>
-                  <input type="text" id="nlSenderName" placeholder="例: 株式会社アイドマ・ホールディングス M&A戦略室">
+                  <label>送信元アドレス（エイリアス）</label>
+                  <input type="email" id="nlFromEmail" placeholder="例：ma_team@mamirai-mp.jp" oninput="saveSenderSettings()">
+                  <div class="help-text">Gmailの「他のアドレスでメールを送信」に登録済みのエイリアスアドレスを入力してください。</div>
+                </div>
+                <div class="form-group">
+                  <label>差出人表示名</label>
+                  <input type="text" id="nlSenderName" placeholder="例：㈱M&Aミライ・パートナーズ" oninput="saveSenderSettings()">
                 </div>
                 <div class="form-group">
                   <label>送信間隔（秒）</label>
@@ -862,6 +872,7 @@ const LS = {
   templates:   'ma_templates_v2',
   pjList:      'ma_pjList_v2',
   sentHistory: 'ma_sentHistory_v2',
+  pjPdfs:      'ma_pjPdfs_v1',
 };
 
 let state = {
@@ -874,6 +885,7 @@ let state = {
   selectedPJ: null,
   attachedFile: null,
   attachedFileBase64: null,
+  pjPdfs: {},  // { pjId: { name, base64 } }
   currentStep: 1,
   isSignedIn: false,
   userEmail: '',
@@ -988,6 +1000,12 @@ function loadAll() {
   state.templates   = JSON.parse(localStorage.getItem(LS.templates)   || '[]');
   state.pjList      = JSON.parse(localStorage.getItem(LS.pjList)      || '[]');
   state.sentHistory = JSON.parse(localStorage.getItem(LS.sentHistory) || '[]');
+  state.pjPdfs      = JSON.parse(localStorage.getItem(LS.pjPdfs)      || '{}');
+  // Load saved sender settings
+  const savedFrom = localStorage.getItem('ma_fromEmail') || '';
+  const savedName = localStorage.getItem('ma_senderName') || '';
+  ['fromEmail','nlFromEmail'].forEach(id => { const el = document.getElementById(id); if (el && savedFrom) el.value = savedFrom; });
+  ['senderName','nlSenderName'].forEach(id => { const el = document.getElementById(id); if (el && savedName) el.value = savedName; });
 
   rebuildFlatContacts();
   populateFilters();
@@ -1005,6 +1023,14 @@ function saveBuyers()      { localStorage.setItem(LS.buyers,      JSON.stringify
 function saveTemplates()   { localStorage.setItem(LS.templates,   JSON.stringify(state.templates)); }
 function savePJList()      { localStorage.setItem(LS.pjList,      JSON.stringify(state.pjList)); }
 function saveSentHistory() { localStorage.setItem(LS.sentHistory, JSON.stringify(state.sentHistory)); }
+function savePjPdfs() {
+  try { localStorage.setItem(LS.pjPdfs, JSON.stringify(state.pjPdfs)); }
+  catch(e) { showToast('PDFの保存に失敗しました（ブラウザの容量不足の可能性があります）', 'error'); }
+}
+function saveSenderSettings() {
+  localStorage.setItem('ma_fromEmail',   document.getElementById('fromEmail')?.value.trim() || document.getElementById('nlFromEmail')?.value.trim() || '');
+  localStorage.setItem('ma_senderName',  document.getElementById('senderName')?.value.trim() || document.getElementById('nlSenderName')?.value.trim() || '');
+}
 
 // ============================================================
 // BUYER DATA
@@ -1525,8 +1551,23 @@ function onPJChange() {
       extraHtml;
     document.getElementById('pjSendInfo').innerHTML =
       `📁 PJ: <b>${escHtml(p.pjId)}</b> を送信します`;
+    // Load saved PDF for this PJ
+    const savedPdf = state.pjPdfs[p.pjId];
+    if (savedPdf) {
+      state.attachedFile = { name: savedPdf.name, size: savedPdf.size || 0 };
+      state.attachedFileBase64 = savedPdf.base64;
+      showPdfFileInfo(savedPdf.name, savedPdf.size || 0);
+    } else {
+      state.attachedFile = null; state.attachedFileBase64 = null;
+      document.getElementById('fileInput').value = '';
+      document.getElementById('uploadArea').classList.remove('has-file');
+      document.getElementById('fileList').innerHTML = '';
+    }
   } else {
     detail.classList.add('hidden');
+    state.attachedFile = null; state.attachedFileBase64 = null;
+    document.getElementById('uploadArea').classList.remove('has-file');
+    document.getElementById('fileList').innerHTML = '';
   }
   filterTable();
 }
@@ -1809,20 +1850,35 @@ function handleFileUpload(input) {
   const file = input.files[0];
   if (!file) return;
   if (file.type !== 'application/pdf') { showToast('PDFファイルのみ可', 'error'); input.value=''; return; }
-  state.attachedFile = file;
+  state.attachedFile = { name: file.name, size: file.size };
   const reader = new FileReader();
-  reader.onload = e => { state.attachedFileBase64 = e.target.result.split(',')[1]; };
+  reader.onload = e => {
+    const base64 = e.target.result.split(',')[1];
+    state.attachedFileBase64 = base64;
+    if (state.selectedPJ) {
+      state.pjPdfs[state.selectedPJ.pjId] = { name: file.name, base64, size: file.size };
+      savePjPdfs();
+      showToast(`${state.selectedPJ.pjId} のPDFを保存しました`, 'success');
+    }
+    showPdfFileInfo(file.name, file.size);
+  };
   reader.readAsDataURL(file);
+}
+function showPdfFileInfo(name, size) {
   document.getElementById('uploadArea').classList.add('has-file');
   document.getElementById('fileList').innerHTML = `
     <div class="file-info">
       <span>📄</span>
-      <span class="name">${escHtml(file.name)}</span>
-      <span class="size">${formatFileSize(file.size)}</span>
+      <span class="name">${escHtml(name)}</span>
+      <span class="size">${formatFileSize(size || 0)}</span>
       <button type="button" class="btn btn-danger btn-sm" onclick="removeFile()" style="padding:3px 10px;font-size:12px;flex-shrink:0;">🗑️ 削除</button>
     </div>`;
 }
 function removeFile() {
+  if (state.selectedPJ) {
+    delete state.pjPdfs[state.selectedPJ.pjId];
+    savePjPdfs();
+  }
   state.attachedFile = null; state.attachedFileBase64 = null;
   document.getElementById('fileInput').value = '';
   document.getElementById('uploadArea').classList.remove('has-file');
@@ -1946,6 +2002,7 @@ async function sendEmails(recipients) {
   const subject    = document.getElementById('emailSubject').value;
   const body       = document.getElementById('emailBody').value;
   const senderName = document.getElementById('senderName').value.trim();
+  const fromEmail  = document.getElementById('fromEmail').value.trim() || state.userEmail;
   const interval   = parseInt(document.getElementById('sendInterval').value) || 3;
 
   let successCount = 0, errorCount = 0;
@@ -1956,7 +2013,7 @@ async function sendEmails(recipients) {
     document.getElementById('progressFill').style.width = ((i+1)/recipients.length*100).toFixed(0) + '%';
     document.getElementById('sendStatusText').textContent = `送信中... ${i+1} / ${recipients.length}`;
     try {
-      await sendSingleEmail(c.email, replacePlaceholders(subject,c), replacePlaceholders(body,c), senderName);
+      await sendSingleEmail(c.email, replacePlaceholders(subject,c), replacePlaceholders(body,c), senderName, fromEmail);
       successCount++; successList.push(c);
       addLog(`✅ ${c.companyName} ${c.name} (${c.email})`, 'success');
     } catch(e) {
@@ -1979,8 +2036,9 @@ async function sendEmails(recipients) {
   showToast(errorCount === 0 ? `${successCount}件を送信しました` : `成功${successCount} / エラー${errorCount}`, errorCount === 0 ? 'success' : 'error');
 }
 
-async function sendSingleEmail(to, subject, bodyText, senderName) {
-  const from = senderName ? `${senderName} <${state.userEmail}>` : state.userEmail;
+async function sendSingleEmail(to, subject, bodyText, senderName, fromEmail) {
+  const sendFrom = fromEmail || state.userEmail;
+  const from = senderName ? `${senderName} <${sendFrom}>` : sendFrom;
   const makeRaw = (parts) => {
     const raw = parts.join('\r\n');
     return btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -2271,6 +2329,7 @@ async function nlSendEmails(recipients) {
   const subject    = document.getElementById('nlEmailSubject').value;
   const body       = document.getElementById('nlEmailBody').value;
   const senderName = document.getElementById('nlSenderName').value.trim();
+  const fromEmail  = document.getElementById('nlFromEmail').value.trim() || state.userEmail;
   const interval   = parseInt(document.getElementById('nlSendInterval').value) || 3;
 
   let successCount = 0, errorCount = 0;
@@ -2280,7 +2339,7 @@ async function nlSendEmails(recipients) {
     document.getElementById('nlProgressFill').style.width = ((i+1)/recipients.length*100).toFixed(0) + '%';
     document.getElementById('nlSendStatusText').textContent = `送信中... ${i+1} / ${recipients.length}`;
     try {
-      await sendSingleEmail(c.email, nlReplacePlaceholders(subject,c), nlReplacePlaceholders(body,c), senderName);
+      await sendSingleEmail(c.email, nlReplacePlaceholders(subject,c), nlReplacePlaceholders(body,c), senderName, fromEmail);
       successCount++;
       nlAddLog(`✅ ${c.companyName} ${c.name} (${c.email})`, 'success');
     } catch(e) {
