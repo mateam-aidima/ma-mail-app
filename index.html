@@ -1763,9 +1763,9 @@ function showEditPJModal(pjId) {
   editingPJId = pjId;
   document.getElementById('pjModalTitle').textContent = '✏️ PJ編集';
   document.getElementById('pjModalSaveBtn').textContent = '保存';
-  document.getElementById('newPJNum').readOnly = true;
-  document.getElementById('newPJNum').style.background = 'var(--gray-100)';
-  document.getElementById('pjNumHelp').textContent = 'PJ名は変更できません（識別子として使用されています）';
+  document.getElementById('newPJNum').readOnly = false;
+  document.getElementById('newPJNum').style.background = '';
+  document.getElementById('pjNumHelp').textContent = 'アルファベットのプロジェクト名を入力してください（例：PJ-Japan、PJ-Stone）';
   document.getElementById('newPJNum').value        = p.pjId;
   document.getElementById('newPJIndustry').value   = p.industry || '';
   document.getElementById('newPJDesc').value       = p.desc || '';
@@ -1799,14 +1799,24 @@ function saveNewPJ() {
     // Edit mode: update existing PJ
     const idx = state.pjList.findIndex(p => p.pjId === editingPJId);
     if (idx === -1) return;
-    state.pjList[idx] = { ...state.pjList[idx], industry: ind, desc, revenue, profit, location, sellReason, conditions };
+    // Check for duplicate name only if name changed
+    if (pjId !== editingPJId && state.pjList.some(p => p.pjId === pjId)) {
+      showToast('同じPJ名が既に存在します', 'error'); return;
+    }
+    // Rename PDF key if name changed
+    if (pjId !== editingPJId && state.pjPdfs[editingPJId]) {
+      state.pjPdfs[pjId] = state.pjPdfs[editingPJId];
+      delete state.pjPdfs[editingPJId];
+      savePjPdfs();
+    }
+    state.pjList[idx] = { ...state.pjList[idx], pjId, industry: ind, desc, revenue, profit, location, sellReason, conditions };
     savePJList();
     renderPJSelect();
     nlRenderPJList();
     if (state.selectedPJ?.pjId === editingPJId) {
       state.selectedPJ = state.pjList[idx];
       onPJChange();
-      document.getElementById('pjSelect').value = editingPJId;
+      document.getElementById('pjSelect').value = pjId;
     }
     closeNewPJModal();
     showToast(`${pjId} を更新しました`, 'success');
