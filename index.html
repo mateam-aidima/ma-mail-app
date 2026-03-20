@@ -683,6 +683,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
                   <code style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:11px;">{{所在地}}</code>
                   <code style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:11px;">{{売却理由}}</code>
                   <code style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:11px;">{{希望条件}}</code>
+                  <code style="background:#f0fdf4;color:#166534;padding:1px 5px;border-radius:3px;font-size:11px;">{{署名}}</code>
                 </span>
               </div>
             </div>
@@ -2380,11 +2381,24 @@ function buildSalutation(c) {
 function getSelectedStaff() {
   return document.getElementById('senderStaffSelect')?.value || '';
 }
+function getSignature(staff) {
+  const staffLine = staff ? `担当　　：${staff}\n` : '';
+  return `
+────────────────────────────────────
+株式会社M&Aミライ・パートナーズ
+${staffLine}東京本社：〒141-0021 東京都品川区上大崎2-13-30 oak meguro 5階
+HP　　　：https://ma-window.co.jp/company/
+メール　：ma_team@mamirai-mp.jp
+────────────────────────────────────
+※本メールの配信停止をご希望の場合は、お手数ですがその旨を本メールへご返信ください。
+　いただき次第、速やかに対応いたします。`;
+}
 function replacePlaceholders(text, c) {
   const p = state.selectedPJ || {};
+  const staff = getSelectedStaff();
   return text
     .replace(/\{\{宛名\}\}/g,     buildSalutation(c))
-    .replace(/\{\{担当者\}\}/g,   getSelectedStaff())
+    .replace(/\{\{担当者\}\}/g,   staff)
     .replace(/\{\{企業名\}\}/g,   c.companyName)
     .replace(/\{\{担当者名\}\}/g, c.name)
     .replace(/\{\{役職\}\}/g,     c.role)
@@ -2395,7 +2409,8 @@ function replacePlaceholders(text, c) {
     .replace(/\{\{利益規模\}\}/g, p.profit || '')
     .replace(/\{\{所在地\}\}/g,   p.location || '')
     .replace(/\{\{売却理由\}\}/g, p.sellReason || '')
-    .replace(/\{\{希望条件\}\}/g, p.conditions || '');
+    .replace(/\{\{希望条件\}\}/g, p.conditions || '')
+    .replace(/\{\{署名\}\}/g,     getSignature(staff));
 }
 
 // ============================================================
@@ -2751,7 +2766,8 @@ function nlReplacePlaceholders(text, c) {
     .replace(/\{\{担当者名\}\}/g, c.name || '')
     .replace(/\{\{役職\}\}/g,     c.role || '')
     .replace(/\{\{業種\}\}/g,     c.industry || '')
-    .replace(/\{\{案件一覧\}\}/g, buildDealListText());
+    .replace(/\{\{案件一覧\}\}/g, buildDealListText())
+    .replace(/\{\{署名\}\}/g,     getSignature(staff));
 }
 
 // ============================================================
