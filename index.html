@@ -2815,7 +2815,7 @@ function nlFilterTable() {
   const search = (document.getElementById('nlSearchInput')?.value || '').toLowerCase();
   const ind    = document.getElementById('nlIndustryFilter')?.value || '';
   state.nl.filteredContacts = state.flatContacts.filter(c =>
-    c.email && !c.optOut &&
+    c.contactMethod === 'メール' && !c.optOut &&
     (!search || c.companyName.toLowerCase().includes(search) || (c.name||'').toLowerCase().includes(search)) &&
     (!ind || c.industry === ind)
   );
@@ -2858,7 +2858,7 @@ function nlToggleSelect(key) {
 }
 function nlToggleSelectAll(cb) { cb.checked ? nlSelectAllVisible() : nlDeselectAll(); }
 function nlSelectAllVisible() {
-  state.nl.filteredContacts.forEach(c => { if (c.email && !c.optOut) state.nl.selectedKeys.add(c.key); });
+  state.nl.filteredContacts.forEach(c => { if (c.contactMethod === 'メール' && !c.optOut) state.nl.selectedKeys.add(c.key); });
   nlRenderTable(); nlUpdateRecipCount();
 }
 function nlDeselectAll() {
