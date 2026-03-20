@@ -193,6 +193,29 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
 .inline-form { background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 14px; margin-bottom: 14px; }
 .inline-form .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
 .inline-form .row .form-group { margin-bottom: 0; flex: 1; min-width: 120px; }
+/* Manual modal */
+.manual-modal { max-width: 860px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; }
+.manual-body { overflow-y: auto; flex: 1; padding: 0; }
+.manual-toc { background: var(--primary-light); border-bottom: 1px solid #bfdbfe; padding: 14px 24px; }
+.manual-toc h4 { font-size: 13px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+.manual-toc ul { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.manual-toc li a { font-size: 12px; color: var(--primary); text-decoration: none; }
+.manual-toc li a:hover { text-decoration: underline; }
+.manual-section { padding: 20px 24px; border-bottom: 1px solid var(--gray-100); }
+.manual-section:last-child { border-bottom: none; }
+.manual-section h2 { font-size: 16px; font-weight: 700; color: var(--gray-800); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--primary-light); display: flex; align-items: center; gap: 8px; }
+.manual-section h3 { font-size: 14px; font-weight: 700; color: var(--primary); margin: 14px 0 6px; }
+.manual-section p { font-size: 13px; color: var(--gray-700); line-height: 1.8; margin-bottom: 8px; }
+.manual-section ul, .manual-section ol { font-size: 13px; color: var(--gray-700); line-height: 1.9; padding-left: 20px; margin-bottom: 8px; }
+.manual-section li { margin-bottom: 2px; }
+.manual-tip { background: #fffbeb; border-left: 3px solid var(--warning); padding: 8px 12px; border-radius: 0 var(--radius) var(--radius) 0; font-size: 12px; color: #92400e; margin: 8px 0; }
+.manual-note { background: #eff6ff; border-left: 3px solid var(--primary); padding: 8px 12px; border-radius: 0 var(--radius) var(--radius) 0; font-size: 12px; color: #1e40af; margin: 8px 0; }
+.manual-var { display: inline-block; background: var(--primary-light); color: var(--primary); padding: 1px 6px; border-radius: 4px; font-size: 11px; font-family: monospace; font-weight: 600; margin: 1px; }
+.manual-var.pj { background: #fef3c7; color: #92400e; }
+.manual-var.sig { background: #f0fdf4; color: #166534; }
+.manual-step-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; }
+.manual-step-num { background: var(--primary); color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+.manual-version { font-size: 11px; color: var(--gray-400); text-align: right; padding: 8px 24px; }
 </style>
 </head>
 <body>
@@ -558,6 +581,285 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
   </div>
 </div>
 
+<!-- MANUAL MODAL -->
+<div id="manualModal" class="modal-overlay hidden" onclick="event.target===this&&closeManual()">
+  <div class="modal manual-modal">
+    <div class="modal-header" style="background:linear-gradient(135deg,#1e3a5f,#1a56db);color:white;border-radius:var(--radius) var(--radius) 0 0;">
+      <h3 style="color:white;">📖 M&A 案件メール配信システム　操作マニュアル</h3>
+      <button class="close-btn" onclick="closeManual()" style="color:white;opacity:0.8;">&times;</button>
+    </div>
+    <div class="manual-body">
+      <!-- 目次 -->
+      <div class="manual-toc">
+        <h4>目次</h4>
+        <ul>
+          <li><a href="#man-start">1. はじめに・ログイン</a></li>
+          <li><a href="#man-data">2. 買い手データの準備</a></li>
+          <li><a href="#man-pj">3. 案件（PJ）管理</a></li>
+          <li><a href="#man-template">4. テンプレート管理</a></li>
+          <li><a href="#man-individual">5. 個別案件送信</a></li>
+          <li><a href="#man-newsletter">6. メルマガ一括配信</a></li>
+          <li><a href="#man-optout">7. 配信停止（オプトアウト）</a></li>
+          <li><a href="#man-history">8. 送信履歴</a></li>
+          <li><a href="#man-settings">9. 設定</a></li>
+          <li><a href="#man-variables">10. 差し込み変数一覧</a></li>
+          <li><a href="#man-faq">11. よくある質問</a></li>
+        </ul>
+      </div>
+
+      <!-- 1. はじめに -->
+      <div class="manual-section" id="man-start">
+        <h2>1. はじめに・ログイン</h2>
+        <p>本システムは、M&amp;A案件の買い手候補にメールを送信するためのツールです。Googleアカウントと連携し、Gmailを通じてメールを送信します。</p>
+        <h3>ログイン手順</h3>
+        <ol>
+          <li>「Googleでログイン」ボタンをクリックします</li>
+          <li>ブラウザのGoogleアカウント選択画面でアカウントを選択します</li>
+          <li>Gmailへのアクセス権限を許可します</li>
+          <li>ログイン後、メイン画面が表示されます</li>
+        </ol>
+        <div class="manual-note">初回利用時は⚙️ 設定から「送信元メールアドレス」「表示名」「署名」を設定してください。</div>
+        <h3>画面構成</h3>
+        <ul>
+          <li><b>左上タイトル</b>：クリックするとトップ画面（個別送信①）に戻ります</li>
+          <li><b>右上メニュー</b>：送信履歴 / 設定 / マニュアル / ログアウト</li>
+          <li><b>モード切替</b>：「個別案件送信」と「メルマガ一括配信」を切り替えます</li>
+        </ul>
+        <div class="manual-tip">ページをリロードしても作業中の状態（ステップ・選択内容・入力内容）は保持されます。</div>
+      </div>
+
+      <!-- 2. 買い手データ -->
+      <div class="manual-section" id="man-data">
+        <h2>2. 買い手データの準備</h2>
+        <p>「📊 データ管理」ボタンから買い手情報を管理します。</p>
+        <h3>CSVインポート</h3>
+        <p>スプレッドシートから以下の形式でCSVをエクスポートしてインポートできます。</p>
+        <p style="background:var(--gray-50);padding:8px 10px;border-radius:var(--radius);font-family:monospace;font-size:11px;line-height:2;">
+          企業名, 業種, 案件No, 連絡方法, 連絡先1_名前, 連絡先1_役職, 連絡先1_メール, 連絡先2_名前, 連絡先2_役職, 連絡先2_メール, 連絡先3_名前, 連絡先3_役職, 連絡先3_メール
+        </p>
+        <ul>
+          <li>「既存データに追加」：現在のデータを残して追加</li>
+          <li>「既存データを上書き」：全データを新しいCSVで置き換え</li>
+        </ul>
+        <div class="manual-tip">Googleスプレッドシートの場合は「ファイル → ダウンロード → CSVファイル（.csv）」でエクスポートできます。</div>
+        <h3>手動追加</h3>
+        <p>「➕ 手動追加」タブから1件ずつ直接入力して追加できます。企業名・連絡先（複数可）・連絡方法・フォロー状況・メモを登録できます。</p>
+        <h3>一覧・管理</h3>
+        <p>「📋 一覧・管理」タブで全データの確認・編集・削除・CSVエクスポートができます。</p>
+        <h3>連絡先について</h3>
+        <ul>
+          <li>1社につき複数の連絡先（担当者）を登録できます</li>
+          <li>各連絡先に「連絡方法」（メール・Chatwork・LINEなど）を設定できます</li>
+          <li>メルマガ一括配信では「連絡方法＝メール」の連絡先のみ表示されます</li>
+          <li>各連絡先ごとに配信停止を設定できます（✉️ チェックボックス）</li>
+        </ul>
+      </div>
+
+      <!-- 3. PJ管理 -->
+      <div class="manual-section" id="man-pj">
+        <h2>3. 案件（PJ）管理</h2>
+        <p>「📋 PJ一覧・編集」または「＋ 新規PJ作成」ボタンから案件を管理します。</p>
+        <h3>PJの作成</h3>
+        <p>以下の情報を登録できます：</p>
+        <ul>
+          <li><b>PJ名</b>（必須）：アルファベットのプロジェクト識別名。例：PJ-Japan</li>
+          <li>業種 / 概要 / 売上規模 / 利益規模 / 所在地 / 売却理由 / 希望条件</li>
+        </ul>
+        <div class="manual-note">PJ名は差し込み変数 <span class="manual-var pj">{{PJ番号}}</span> としてメール本文に自動挿入されます。</div>
+        <h3>ノンネームPDFのアップロード</h3>
+        <p>「PJ一覧・編集」モーダルの各PJカード下部からPDFをアップロードできます。</p>
+        <ul>
+          <li>アップロードしたPDFは個別案件送信時に自動でメールに添付されます</li>
+          <li>PDFを選択すると、業種・売上・利益などの情報が自動抽出されPJに反映されます</li>
+          <li>変更・削除も同画面から行えます</li>
+        </ul>
+        <div class="manual-tip">PDFは各PJごとに1ファイル保存されます。ブラウザのローカルストレージに保存されるため、ブラウザを変えると引き継がれません。</div>
+      </div>
+
+      <!-- 4. テンプレート -->
+      <div class="manual-section" id="man-template">
+        <h2>4. テンプレート管理</h2>
+        <p>メール作成画面の「📝 テンプレート管理」ボタン、またはメール作成ステップからアクセスします。</p>
+        <h3>テンプレートの作成</h3>
+        <ul>
+          <li><b>No</b>：並び順の番号</li>
+          <li><b>タイミング</b>：用途の説明（例：初回アプローチ、フォロー1回目）</li>
+          <li><b>件名・本文</b>：差し込み変数を使って動的に変化するテキストを作成</li>
+        </ul>
+        <h3>使える差し込み変数</h3>
+        <p>テンプレートおよび件名・本文に以下の変数を入力すると、送信時に自動で置換されます：</p>
+        <p>
+          <span class="manual-var">{{宛名}}</span>
+          <span class="manual-var">{{担当者}}</span>
+          <span class="manual-var">{{企業名}}</span>
+          <span class="manual-var">{{担当者名}}</span>
+          <span class="manual-var">{{役職}}</span>
+          <span class="manual-var">{{業種}}</span>
+          <span class="manual-var pj">{{PJ番号}}</span>
+          <span class="manual-var pj">{{売上規模}}</span>
+          <span class="manual-var pj">{{利益規模}}</span>
+          <span class="manual-var pj">{{所在地}}</span>
+          <span class="manual-var pj">{{売却理由}}</span>
+          <span class="manual-var pj">{{希望条件}}</span>
+          <span class="manual-var sig">{{署名}}</span>
+          <span class="manual-var" style="background:#f0fdf4;color:#166534;">{{案件一覧}}</span>（メルマガのみ）
+        </p>
+        <div class="manual-tip">{{宛名}} は「〇〇様」形式に自動整形されます。名前が未登録の場合は「ご担当者様」になります。</div>
+      </div>
+
+      <!-- 5. 個別案件送信 -->
+      <div class="manual-section" id="man-individual">
+        <h2>5. 個別案件送信</h2>
+        <p>特定の1案件（PJ）を選んで、選んだ買い手候補に個別メールを送るモードです。</p>
+
+        <h3>① PJ選択・送信先選択</h3>
+        <div class="manual-step-row"><span class="manual-step-num">1</span><span>「紹介するPJ」のドロップダウンから案件を選択します</span></div>
+        <div class="manual-step-row"><span class="manual-step-num">2</span><span>一覧から送信先にチェックを入れます（複数選択可）</span></div>
+        <div class="manual-step-row"><span class="manual-step-num">3</span><span>フィルターで絞り込み（企業名検索 / 業種 / 送信状態 / フォロー状況）</span></div>
+        <div class="manual-step-row"><span class="manual-step-num">4</span><span>「全選択」「全解除」ボタンで一括操作も可能</span></div>
+        <div class="manual-step-row"><span class="manual-step-num">5</span><span>「次へ：メール作成 →」をクリック</span></div>
+        <div class="manual-note">送信済み（赤背景）の相手も表示されます。フィルター「未送信のみ」で絞り込めます。</div>
+
+        <h3>② メール作成</h3>
+        <ul>
+          <li>テンプレートを選択するか、件名・本文を直接入力します</li>
+          <li>「担当者」を選択します（差し込み変数 <span class="manual-var">{{担当者}}</span> に使用）</li>
+          <li>送信間隔（秒）を設定します（デフォルト3秒）</li>
+        </ul>
+
+        <h3>③ プレビュー・送信</h3>
+        <ul>
+          <li>「プレビュー対象」で送信先を切り替えて各メールを確認できます</li>
+          <li>ノンネームPDFが登録されていると添付ファイルとして表示されます</li>
+          <li>「📨 一括送信する」をクリックし、確認ダイアログでOKを押すと送信開始</li>
+          <li>送信中はプログレスバーとログが表示されます</li>
+        </ul>
+        <div class="manual-tip">送信後は自動的に送信済みフラグが付き、次回から赤背景で表示されます。</div>
+      </div>
+
+      <!-- 6. メルマガ一括配信 -->
+      <div class="manual-section" id="man-newsletter">
+        <h2>6. メルマガ一括配信</h2>
+        <p>複数案件をまとめて紹介するメルマガを、多数の買い手候補に一斉送信するモードです。<b>配信停止中の連絡先は自動的に除外</b>されます。</p>
+
+        <h3>① 案件選択</h3>
+        <p>メルマガに含める案件（PJ）をチェックして選択します。複数選択可。選択した案件が <span class="manual-var" style="background:#f0fdf4;color:#166534;">{{案件一覧}}</span> に展開されます。</p>
+
+        <h3>② 送信先選択</h3>
+        <p>メール送信先を選択します（連絡方法＝メール かつ 配信停止なし の連絡先のみ表示）。フィルターで絞り込み後、全選択・個別選択が可能です。</p>
+
+        <h3>③ メール作成</h3>
+        <ul>
+          <li>本文に <span class="manual-var" style="background:#f0fdf4;color:#166534;">{{案件一覧}}</span> と書くと、選択したPJの情報が自動で箇条書き展開されます</li>
+          <li>その他の差し込み変数も使用可能</li>
+        </ul>
+
+        <h3>④ プレビュー・送信</h3>
+        <p>個別案件送信と同様にプレビューを確認してから送信します。</p>
+
+        <h3>配信停止リストの同期</h3>
+        <p>送信先選択画面の「🔄 配信停止リストを同期」ボタンを使うと、GAS（Google Apps Script）と連携して配信停止申請者を自動取得・反映します。</p>
+        <div class="manual-note">GASを使った配信停止フォームが設定されている場合のみ有効です。詳細は管理者にご確認ください。</div>
+      </div>
+
+      <!-- 7. 配信停止 -->
+      <div class="manual-section" id="man-optout">
+        <h2>7. 配信停止（オプトアウト）</h2>
+        <p>配信停止はメールアドレス（連絡先）ごとに管理されます。</p>
+        <h3>配信停止の設定方法</h3>
+        <ul>
+          <li><b>手動</b>：「📊 データ管理 → 一覧・管理」で企業を編集し、該当連絡先の「配信停止」チェックをオンにする</li>
+          <li><b>自動同期</b>：メルマガ画面の「🔄 配信停止リストを同期」でGASから自動取得</li>
+          <li><b>受信者のリンク</b>：メール本文の配信停止リンクから申請があった場合、同期ボタンで反映</li>
+        </ul>
+        <h3>配信停止リストの確認</h3>
+        <p>「📊 データ管理 → 🚫 配信停止リスト」タブで配信停止中の全連絡先を一覧表示できます。「配信再開」ボタンで解除できます。</p>
+        <h3>配信停止の影響範囲</h3>
+        <ul>
+          <li><b>メルマガ一括配信</b>：配信停止中の連絡先は送信先一覧に表示されません</li>
+          <li><b>個別案件送信</b>：配信停止中でも表示・選択できます（個別判断で送信可能）</li>
+        </ul>
+      </div>
+
+      <!-- 8. 送信履歴 -->
+      <div class="manual-section" id="man-history">
+        <h2>8. 送信履歴</h2>
+        <p>右上の「📋 送信履歴」ボタンから全送信ログを確認できます。</p>
+        <ul>
+          <li>送信日時 / PJ名 / 企業名 / 送信先メールアドレスが記録されます</li>
+          <li>検索ボックスで企業名・メール・PJで絞り込みできます</li>
+          <li>「📤 CSVエクスポート」でExcelなどで活用できます</li>
+        </ul>
+        <div class="manual-tip">送信履歴はブラウザのローカルストレージに保存されます。ブラウザのデータを削除すると消えますのでご注意ください。</div>
+      </div>
+
+      <!-- 9. 設定 -->
+      <div class="manual-section" id="man-settings">
+        <h2>9. 設定</h2>
+        <p>右上「⚙️ 設定」ボタンから送信関連の設定を変更できます。</p>
+        <ul>
+          <li><b>送信元メールアドレス</b>：Gmailアドレスを入力（ログイン中のアドレスと同じ推奨）</li>
+          <li><b>表示名</b>：受信者に表示される送信者名。例：アイドマ 宮下</li>
+          <li><b>署名</b>：メール末尾に自動挿入される文章。<span class="manual-var sig">{{署名}}</span> 変数で本文中の任意の場所にも挿入可能</li>
+        </ul>
+        <div class="manual-note">設定はブラウザのローカルストレージに保存されます。初回利用前に必ず設定してください。</div>
+      </div>
+
+      <!-- 10. 差し込み変数 -->
+      <div class="manual-section" id="man-variables">
+        <h2>10. 差し込み変数一覧</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:var(--gray-100);">
+              <th style="padding:7px 10px;text-align:left;border:1px solid var(--gray-200);">変数</th>
+              <th style="padding:7px 10px;text-align:left;border:1px solid var(--gray-200);">内容</th>
+              <th style="padding:7px 10px;text-align:left;border:1px solid var(--gray-200);">対応モード</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{宛名}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">「〇〇様」形式。名前未登録時は「ご担当者様」</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">両方</td></tr>
+            <tr style="background:var(--gray-50);"><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{担当者}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">送信時に選択した担当者名</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">両方</td></tr>
+            <tr><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{企業名}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">送信先の企業名</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">両方</td></tr>
+            <tr style="background:var(--gray-50);"><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{担当者名}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">送信先の担当者名</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">両方</td></tr>
+            <tr><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{役職}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">送信先の役職</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">両方</td></tr>
+            <tr style="background:var(--gray-50);"><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{業種}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">送信先企業の業種</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">両方</td></tr>
+            <tr><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{PJ番号}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">選択中のPJ名</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">個別のみ</td></tr>
+            <tr style="background:var(--gray-50);"><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{売上規模}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">PJの売上規模</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">個別のみ</td></tr>
+            <tr><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{利益規模}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">PJの利益規模</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">個別のみ</td></tr>
+            <tr style="background:var(--gray-50);"><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{所在地}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">PJの所在地</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">個別のみ</td></tr>
+            <tr><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{売却理由}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">PJの売却理由</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">個別のみ</td></tr>
+            <tr style="background:var(--gray-50);"><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{希望条件}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">PJの希望条件</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">個別のみ</td></tr>
+            <tr><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{署名}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">設定した署名テキスト</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">両方</td></tr>
+            <tr style="background:var(--gray-50);"><td style="padding:6px 10px;border:1px solid var(--gray-200);"><code>{{案件一覧}}</code></td><td style="padding:6px 10px;border:1px solid var(--gray-200);">選択したPJの情報を箇条書きで自動展開</td><td style="padding:6px 10px;border:1px solid var(--gray-200);">メルマガのみ</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 11. FAQ -->
+      <div class="manual-section" id="man-faq">
+        <h2>11. よくある質問</h2>
+        <h3>Q. データはどこに保存されていますか？</h3>
+        <p>買い手データ、PJ情報、テンプレート、送信履歴、PDFはすべてブラウザのローカルストレージに保存されています。サーバーには送信されません。ブラウザのデータ削除やシークレットモードでは消えますのでご注意ください。</p>
+        <h3>Q. 送信に失敗した場合はどうなりますか？</h3>
+        <p>送信ログにエラーが表示されます。送信済みフラグは付かないため、再度選択して送信し直せます。</p>
+        <h3>Q. 別のPCでも使えますか？</h3>
+        <p>データはブラウザのローカルストレージに保存されるため、別のPCでは別のデータとなります。データを移行するにはCSVエクスポート→インポートをご利用ください。</p>
+        <h3>Q. 配信停止ボタンを押したのに送れてしまいます</h3>
+        <p>配信停止はメルマガ一括配信のみ適用されます。個別案件送信では配信停止中の連絡先も表示されます（個別判断で送信可）。</p>
+        <h3>Q. テンプレートを間違えて削除してしまいました</h3>
+        <p>削除したテンプレートは復元できません。重要なテンプレートは事前にテキストをコピーしておくことをお勧めします。</p>
+        <h3>Q. マニュアルが古い内容になっていると思います</h3>
+        <p>本マニュアルはシステム本体（index.html）に内蔵されており、システムのアップデートと同時に更新されます。最新システムが展開されていれば内容も最新です。</p>
+      </div>
+
+      <div class="manual-version">バージョン：2025年3月　M&amp;A案件メール配信システム</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeManual()">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- MAIN APP -->
 <div id="mainApp" class="hidden">
   <div class="header">
@@ -566,6 +868,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
       <span class="user-info" id="userEmail"></span>
       <button class="btn-logout" onclick="showSentHistory()">📋 送信履歴</button>
       <button class="btn-logout" onclick="showSenderSettings()">⚙️ 設定</button>
+      <button class="btn-logout" onclick="showManual()" style="background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.5);">📖 マニュアル</button>
       <button class="btn-logout" onclick="handleLogout()">ログアウト</button>
     </div>
   </div>
@@ -3247,6 +3550,21 @@ function showSentHistory() {
 }
 function closeSentHistory() {
   document.getElementById('sentHistoryModal').classList.add('hidden');
+}
+function showManual() {
+  const modal = document.getElementById('manualModal');
+  modal.classList.remove('hidden');
+  // Wire up TOC anchor links to scroll inside .manual-body
+  modal.querySelectorAll('.manual-toc a[href^="#"]').forEach(a => {
+    a.onclick = e => {
+      e.preventDefault();
+      const target = modal.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+  });
+}
+function closeManual() {
+  document.getElementById('manualModal').classList.add('hidden');
 }
 function renderSentHistoryTable() {
   const q = (document.getElementById('sentHistorySearch')?.value || '').toLowerCase();
