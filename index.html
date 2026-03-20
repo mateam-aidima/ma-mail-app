@@ -217,6 +217,30 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
   </div>
 </div>
 
+<!-- GAS SETUP GUIDE MODAL -->
+<div id="gasGuideModal" class="modal-overlay hidden" onclick="event.target===this&&closeGasGuide()">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <h3>📋 配信停止 GAS セットアップ手順</h3>
+      <button class="modal-close" onclick="closeGasGuide()">✕</button>
+    </div>
+    <div class="modal-body" style="font-size:13px;line-height:1.8;">
+      <p><b>手順1：</b> <a href="https://script.google.com" target="_blank" style="color:var(--primary);">script.google.com</a> を開き、「新しいプロジェクト」を作成</p>
+      <p><b>手順2：</b> 下記コードをコピーして貼り付け、保存（Ctrl+S）</p>
+      <pre id="gasCodeBlock" style="background:#f8f9fa;border:1px solid var(--gray-200);border-radius:var(--radius);padding:12px;font-size:11px;overflow-x:auto;white-space:pre;line-height:1.6;max-height:260px;overflow-y:auto;"></pre>
+      <button class="btn btn-outline btn-sm" onclick="copyGasCode()" style="margin-bottom:12px;">📋 コードをコピー</button>
+      <p><b>手順3：</b> 「デプロイ」→「新しいデプロイ」→ 種類：<b>ウェブアプリ</b></p>
+      <p><b>手順4：</b> 「次のユーザーとして実行：自分」、「アクセスできるユーザー：全員」に設定して「デプロイ」</p>
+      <p><b>手順5：</b> 表示されたURLをコピーして、設定の「配信停止 GAS URL」に貼り付け</p>
+      <p style="background:#eff6ff;border-left:3px solid var(--primary);padding:8px 12px;margin-top:8px;border-radius:0 4px 4px 0;font-size:12px;">
+        ⚠️ 初回デプロイ後、Googleアカウントへのアクセス許可を求められます。承認してください。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeGasGuide()">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- SENDER SETTINGS MODAL -->
 <div id="senderSettingsModal" class="modal-overlay hidden" onclick="event.target===this&&closeSenderSettings()">
   <div class="modal">
@@ -245,6 +269,14 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
         <label>送信間隔（秒）</label>
         <input type="number" id="settingsSendInterval" value="3" min="1" max="30" style="width:80px;">
         <div class="help-text">一括送信時の各メール間の待機時間です。</div>
+      </div>
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--gray-200);">
+      <div class="form-group">
+        <label>配信停止 GAS URL（メルマガ用）</label>
+        <input type="text" id="settingsGasUrl" placeholder="https://script.google.com/macros/s/XXXXX/exec">
+        <div class="help-text">Google Apps Script をデプロイして取得したURLを入力してください。メルマガの配信停止リンクに使用されます。<br>
+          <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;font-size:11px;" onclick="showGasSetupGuide()">📋 GASセットアップ手順を見る</button>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -777,6 +809,9 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
     <!-- NEWSLETTER MODE                                   -->
     <!-- ================================================ -->
     <div id="nlContainer" class="hidden">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+        <button class="btn btn-outline btn-sm" onclick="syncUnsubscribes()" style="font-size:12px;" title="配信停止申請をGASから取得し、該当者を自動で配信停止にします">🔄 配信停止リストを同期</button>
+      </div>
       <div class="steps">
         <div class="step active" id="nlStep1"><span class="step-num">1</span>案件選択</div>
         <div class="step" id="nlStep2"><span class="step-num">2</span>送信先選択</div>
@@ -1162,6 +1197,7 @@ function showSenderSettings() {
   document.getElementById('settingsFromEmail').value    = localStorage.getItem('ma_fromEmail') || '';
   document.getElementById('settingsSenderName').value   = localStorage.getItem('ma_senderName') || '';
   document.getElementById('settingsSendInterval').value = localStorage.getItem('ma_sendInterval') || '3';
+  document.getElementById('settingsGasUrl').value       = localStorage.getItem('ma_gasUrl') || '';
   document.getElementById('senderSettingsModal').classList.remove('hidden');
 }
 function closeSenderSettings() {
@@ -1172,6 +1208,8 @@ function saveSenderSettings() {
   const fromEmail    = document.getElementById('settingsFromEmail').value.trim();
   const senderName   = document.getElementById('settingsSenderName').value.trim();
   const sendInterval = document.getElementById('settingsSendInterval').value || '3';
+  const gasUrl       = document.getElementById('settingsGasUrl').value.trim();
+  localStorage.setItem('ma_gasUrl', gasUrl);
   // Save Client ID and reinitialize if changed
   const oldClientId = getConfig().clientId;
   if (newClientId !== oldClientId) {
@@ -1188,6 +1226,84 @@ function saveSenderSettings() {
   closeSenderSettings();
   showToast('設定を保存しました', 'success');
 }
+const GAS_CODE = `// Google Apps Script - 配信停止管理
+// デプロイ: ウェブアプリとして公開 > 全員がアクセス可能
+
+const SHEET_NAME = 'unsubscribes';
+
+function doGet(e) {
+  const action = e.parameter.action;
+  if (action === 'unsubscribe') {
+    const email = e.parameter.email;
+    if (!email) return jsonResp({ ok: false, error: 'no email' });
+    addUnsubscribe(email);
+    return HtmlService.createHtmlOutput(
+      '<html><body style="font-family:sans-serif;text-align:center;padding:40px">' +
+      '<h2>配信停止が完了しました</h2>' +
+      '<p>' + email + ' をメーリングリストから削除しました。</p>' +
+      '</body></html>'
+    );
+  }
+  if (action === 'list') {
+    const emails = getUnsubscribes();
+    return jsonResp({ ok: true, emails });
+  }
+  return jsonResp({ ok: false, error: 'unknown action' });
+}
+
+function addUnsubscribe(email) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) { sheet = ss.insertSheet(SHEET_NAME); sheet.appendRow(['email', 'date']); }
+  const emails = getUnsubscribes();
+  if (!emails.includes(email.toLowerCase())) {
+    sheet.appendRow([email.toLowerCase(), new Date().toISOString()]);
+  }
+}
+
+function getUnsubscribes() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues().flat().map(e => String(e).toLowerCase()).filter(Boolean);
+}
+
+function jsonResp(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+function showGasSetupGuide() {
+  document.getElementById('gasCodeBlock').textContent = GAS_CODE;
+  document.getElementById('gasGuideModal').classList.remove('hidden');
+}
+function closeGasGuide() { document.getElementById('gasGuideModal').classList.add('hidden'); }
+function copyGasCode() {
+  navigator.clipboard.writeText(GAS_CODE).then(() => showToast('コードをコピーしました', 'success'));
+}
+
+async function syncUnsubscribes() {
+  const gasUrl = localStorage.getItem('ma_gasUrl') || '';
+  if (!gasUrl) { showToast('設定からGAS URLを入力してください', 'error'); return; }
+  try {
+    showToast('同期中...', 'info');
+    const resp = await fetch(`${gasUrl}?action=list`);
+    const data = await resp.json();
+    const emails = (data.emails || []).map(e => e.toLowerCase());
+    if (!emails.length) { showToast('配信停止リストは空です', 'info'); return; }
+    let count = 0;
+    state.buyers.forEach(b => {
+      const hasUnsub = (b.contacts || []).some(c => c.email && emails.includes(c.email.toLowerCase()));
+      if (hasUnsub && !b.optOut) { b.optOut = true; count++; }
+    });
+    if (count > 0) {
+      saveBuyers(); rebuildFlatContacts(); filterTable();
+      showToast(`${count}件を配信停止にしました`, 'success');
+    } else {
+      showToast('新しい配信停止はありません', 'info');
+    }
+  } catch(e) { showToast('同期エラー: ' + e.message, 'error'); }
+}
+
 function updateSenderDisplays(fromEmail, senderName) {
   const loginEmail = state.userEmail;
   const displayFrom = fromEmail || loginEmail;
@@ -2381,17 +2497,25 @@ function buildSalutation(c) {
 function getSelectedStaff() {
   return document.getElementById('senderStaffSelect')?.value || '';
 }
-function getSignature(staff) {
+function getSignature(staff, recipientEmail, isNewsletter) {
   const staffLine = staff ? `担当　　：${staff}\n` : '';
+  const gasUrl = localStorage.getItem('ma_gasUrl') || '';
+  let unsubLine = '';
+  if (isNewsletter) {
+    if (gasUrl && recipientEmail) {
+      const url = `${gasUrl}?action=unsubscribe&email=${encodeURIComponent(recipientEmail)}`;
+      unsubLine = `\n配信停止はこちら：${url}`;
+    } else {
+      unsubLine = '\n※配信停止をご希望の場合は、本メールへご返信ください。';
+    }
+  }
   return `
 ────────────────────────────────────
 株式会社M&Aミライ・パートナーズ
 ${staffLine}東京本社：〒141-0021 東京都品川区上大崎2-13-30 oak meguro 5階
 HP　　　：https://ma-window.co.jp/company/
 メール　：ma_team@mamirai-mp.jp
-────────────────────────────────────
-※本メールの配信停止をご希望の場合は、お手数ですがその旨を本メールへご返信ください。
-　いただき次第、速やかに対応いたします。`;
+────────────────────────────────────${unsubLine}`;
 }
 function replacePlaceholders(text, c) {
   const p = state.selectedPJ || {};
@@ -2410,7 +2534,7 @@ function replacePlaceholders(text, c) {
     .replace(/\{\{所在地\}\}/g,   p.location || '')
     .replace(/\{\{売却理由\}\}/g, p.sellReason || '')
     .replace(/\{\{希望条件\}\}/g, p.conditions || '')
-    .replace(/\{\{署名\}\}/g,     getSignature(staff));
+    .replace(/\{\{署名\}\}/g,     getSignature(staff, null, false));
 }
 
 // ============================================================
@@ -2767,7 +2891,7 @@ function nlReplacePlaceholders(text, c) {
     .replace(/\{\{役職\}\}/g,     c.role || '')
     .replace(/\{\{業種\}\}/g,     c.industry || '')
     .replace(/\{\{案件一覧\}\}/g, buildDealListText())
-    .replace(/\{\{署名\}\}/g,     getSignature(staff));
+    .replace(/\{\{署名\}\}/g,     getSignature(staff, c.email, true));
 }
 
 // ============================================================
