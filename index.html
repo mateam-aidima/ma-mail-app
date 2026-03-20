@@ -644,16 +644,26 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
             </div>
           </div>
           <div class="card-body">
-            <div class="form-group">
-              <label>テンプレート選択</label>
-              <select class="template-select" id="templateSelect" onchange="applyTemplate()">
-                <option value="">-- テンプレートを選択 --</option>
-              </select>
+            <div class="form-group" style="display:flex;gap:12px;align-items:flex-end;">
+              <div style="flex:1;">
+                <label>テンプレート選択</label>
+                <select class="template-select" id="templateSelect" onchange="applyTemplate()">
+                  <option value="">-- テンプレートを選択 --</option>
+                </select>
+              </div>
+              <div style="min-width:120px;">
+                <label>担当者</label>
+                <select id="senderStaffSelect" style="width:100%;">
+                  <option value="宮下">宮下</option>
+                  <option value="柿岡">柿岡</option>
+                  <option value="北山">北山</option>
+                </select>
+              </div>
             </div>
             <div class="form-group">
               <label>件名</label>
               <input type="text" id="emailSubject" placeholder="【案件ご紹介】〇〇業界 M&A案件のご案内">
-              <div class="help-text">{{宛名}}（企業名＋役職＋担当者名 様）{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は送信時に自動置換されます</div>
+              <div class="help-text">{{宛名}}（企業名＋役職＋担当者名 様）{{担当者}}（送信担当者）{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は送信時に自動置換されます</div>
             </div>
             <div class="form-group">
               <label>本文</label>
@@ -1896,6 +1906,7 @@ function applyTemplate() {
   body = body.replace(/[〇○]{2}株式会社/g,'{{企業名}}').replace(/○○株式会社/g,'{{企業名}}');
   body = body.replace(/[〇○]{2}様/g,'{{担当者名}}様').replace(/○○様/g,'{{担当者名}}様');
   body = body.replace(/[〇○]{1,2}業界/g,'{{業種}}');
+  body = body.replace(/\[名前\]/g,'{{担当者}}');
   document.getElementById('emailSubject').value = subj;
   document.getElementById('emailBody').value = body;
   showToast('テンプレートを適用しました', 'success');
@@ -2215,10 +2226,14 @@ function buildSalutation(c) {
   const nameStr = role ? `${role} ${name}` : name;
   return nameStr ? `${company}\n${nameStr} 様` : company;
 }
+function getSelectedStaff() {
+  return document.getElementById('senderStaffSelect')?.value || '';
+}
 function replacePlaceholders(text, c) {
   const p = state.selectedPJ || {};
   return text
     .replace(/\{\{宛名\}\}/g,     buildSalutation(c))
+    .replace(/\{\{担当者\}\}/g,   getSelectedStaff())
     .replace(/\{\{企業名\}\}/g,   c.companyName)
     .replace(/\{\{担当者名\}\}/g, c.name)
     .replace(/\{\{役職\}\}/g,     c.role)
