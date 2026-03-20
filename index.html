@@ -2800,7 +2800,7 @@ function nlFilterTable() {
   const search = (document.getElementById('nlSearchInput')?.value || '').toLowerCase();
   const ind    = document.getElementById('nlIndustryFilter')?.value || '';
   state.nl.filteredContacts = state.flatContacts.filter(c =>
-    !c.optOut &&
+    c.email && !c.optOut &&
     (!search || c.companyName.toLowerCase().includes(search) || (c.name||'').toLowerCase().includes(search)) &&
     (!ind || c.industry === ind)
   );
