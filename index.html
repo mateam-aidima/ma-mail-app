@@ -119,12 +119,15 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
 .form-group textarea { min-height: 200px; resize: vertical; line-height: 1.7; }
 .help-text { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
-.template-select { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 14px; margin-bottom: 14px; background: white; }
+.template-select { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 14px; background: white; }
 /* Upload */
 .upload-area { border: 2px dashed var(--gray-300); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--gray-50); }
 .upload-area:hover, .upload-area.drag-over { border-color: var(--primary); background: var(--primary-light); }
-.upload-area.has-file { border-color: var(--success); background: #f0fdf4; }
+.upload-area.has-file { display: none; }
 .upload-icon { font-size: 28px; margin-bottom: 6px; }
+.upload-compact { border: 2px dashed var(--gray-300); border-radius: var(--radius); padding: 7px 12px; cursor: pointer; transition: all 0.2s; background: var(--gray-50); display: flex; align-items: center; gap: 10px; }
+.upload-compact:hover, .upload-compact.drag-over { border-color: var(--primary); background: var(--primary-light); }
+.upload-compact.has-file { display: none; }
 .file-info { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); margin-top: 8px; }
 .file-info .name { flex: 1; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .file-info .size { font-size: 12px; color: var(--gray-500); white-space: nowrap; }
@@ -563,11 +566,12 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
             <div id="pjDetail" class="hidden">
               <div class="pj-info" id="pjInfoBox"></div>
               <div class="pj-upload" id="pjUploadArea">
-                <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px;">📎 ノンネームシート（PDF）</div>
-                <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-                  <div class="upload-icon">📄</div>
-                  <div style="font-size:13px;font-weight:500;color:var(--gray-700);">クリックしてPDFを選択</div>
-                  <div style="font-size:11px;color:var(--gray-400);margin-top:3px;">またはドラッグ＆ドロップ</div>
+                <div class="upload-compact" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                  <span style="font-size:18px;flex-shrink:0;">📄</span>
+                  <div>
+                    <div style="font-size:12px;font-weight:600;color:var(--gray-600);">ノンネームシート（PDF）</div>
+                    <div style="font-size:11px;color:var(--gray-400);">クリックして選択 またはドラッグ＆ドロップ</div>
+                  </div>
                 </div>
                 <input type="file" id="fileInput" accept=".pdf" style="display:none" onchange="handleFileUpload(this)">
                 <div id="fileList"></div>
@@ -663,7 +667,23 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
             <div class="form-group">
               <label>件名</label>
               <input type="text" id="emailSubject" placeholder="【案件ご紹介】〇〇業界 M&A案件のご案内">
-              <div class="help-text">{{宛名}}（企業名＋役職＋担当者名 様）{{担当者}}（送信担当者）{{企業名}} {{担当者名}} {{役職}} {{業種}} {{PJ番号}} {{売上規模}} {{利益規模}} {{所在地}} {{売却理由}} {{希望条件}} は送信時に自動置換されます</div>
+              <div class="help-text" style="line-height:1.8;">
+                送信時に自動置換：
+                <span style="display:inline-flex;flex-wrap:wrap;gap:4px;margin-top:3px;">
+                  <code style="background:var(--primary-light);color:var(--primary);padding:1px 5px;border-radius:3px;font-size:11px;">{{宛名}}</code>
+                  <code style="background:var(--primary-light);color:var(--primary);padding:1px 5px;border-radius:3px;font-size:11px;">{{担当者}}</code>
+                  <code style="background:var(--gray-100);color:var(--gray-600);padding:1px 5px;border-radius:3px;font-size:11px;">{{企業名}}</code>
+                  <code style="background:var(--gray-100);color:var(--gray-600);padding:1px 5px;border-radius:3px;font-size:11px;">{{担当者名}}</code>
+                  <code style="background:var(--gray-100);color:var(--gray-600);padding:1px 5px;border-radius:3px;font-size:11px;">{{役職}}</code>
+                  <code style="background:var(--gray-100);color:var(--gray-600);padding:1px 5px;border-radius:3px;font-size:11px;">{{業種}}</code>
+                  <code style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:11px;">{{PJ番号}}</code>
+                  <code style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:11px;">{{売上規模}}</code>
+                  <code style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:11px;">{{利益規模}}</code>
+                  <code style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:11px;">{{所在地}}</code>
+                  <code style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:11px;">{{売却理由}}</code>
+                  <code style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:11px;">{{希望条件}}</code>
+                </span>
+              </div>
             </div>
             <div class="form-group">
               <label>本文</label>
@@ -725,7 +745,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
             <div class="card-body">
               <div style="max-height:220px;overflow-y:auto;">
                 <table>
-                  <thead><tr><th>企業名</th><th>名前</th><th>役職</th><th>メールアドレス</th></tr></thead>
+                  <thead><tr><th>企業名</th><th>名前</th><th>役職</th><th>メールアドレス</th><th>種別</th></tr></thead>
                   <tbody id="sendListBody"></tbody>
                 </table>
               </div>
@@ -2140,6 +2160,7 @@ function showPdfFileInfo(name, size) {
       <span>📄</span>
       <span class="name">${escHtml(name)}</span>
       <span class="size">${formatFileSize(size || 0)}</span>
+      <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('fileInput').click()" style="padding:3px 10px;font-size:12px;flex-shrink:0;">📎 変更</button>
       <button type="button" class="btn btn-danger btn-sm" onclick="removeFile()" style="padding:3px 10px;font-size:12px;flex-shrink:0;">🗑️ 削除</button>
     </div>`;
 }
@@ -2196,13 +2217,19 @@ function preparePreview() {
   document.getElementById('previewTarget').innerHTML = selected.map((c,i) =>
     `<option value="${i}">${escHtml(c.companyName)} - ${escHtml(c.name||c.email)}</option>`
   ).join('');
-  document.getElementById('sendListBody').innerHTML = selected.map(c => `
-    <tr>
+  document.getElementById('sendListBody').innerHTML = selected.map(c => {
+    const isCC = c.mailType === 'cc';
+    const badge = isCC
+      ? '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:600;">CC</span>'
+      : '<span style="background:var(--primary-light);color:var(--primary);padding:1px 6px;border-radius:3px;font-size:11px;font-weight:600;">To</span>';
+    return `<tr>
       <td>${escHtml(c.companyName)}</td>
       <td>${escHtml(c.name)}</td>
       <td>${escHtml(c.role)}</td>
       <td style="font-family:monospace;font-size:12px;">${escHtml(c.email)}</td>
-    </tr>`).join('');
+      <td style="text-align:center;">${badge}</td>
+    </tr>`;
+  }).join('');
   updatePreview();
 }
 function updatePreview() {
