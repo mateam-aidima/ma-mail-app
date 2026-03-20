@@ -2800,6 +2800,7 @@ function nlFilterTable() {
   const search = (document.getElementById('nlSearchInput')?.value || '').toLowerCase();
   const ind    = document.getElementById('nlIndustryFilter')?.value || '';
   state.nl.filteredContacts = state.flatContacts.filter(c =>
+    !c.optOut &&
     (!search || c.companyName.toLowerCase().includes(search) || (c.name||'').toLowerCase().includes(search)) &&
     (!ind || c.industry === ind)
   );
@@ -2834,6 +2835,7 @@ function nlToggleSelect(key) {
   else {
     const c = state.flatContacts.find(c => c.key === key);
     if (!c || !c.email) { showToast('メールアドレスが未登録のため選択できません', 'error'); return; }
+    if (c.optOut) { showToast(`${c.companyName} は配信停止中のため選択できません`, 'error'); return; }
     state.nl.selectedKeys.add(key);
   }
   nlRenderTable();
@@ -2841,7 +2843,7 @@ function nlToggleSelect(key) {
 }
 function nlToggleSelectAll(cb) { cb.checked ? nlSelectAllVisible() : nlDeselectAll(); }
 function nlSelectAllVisible() {
-  state.nl.filteredContacts.forEach(c => { if (c.email) state.nl.selectedKeys.add(c.key); });
+  state.nl.filteredContacts.forEach(c => { if (c.email && !c.optOut) state.nl.selectedKeys.add(c.key); });
   nlRenderTable(); nlUpdateRecipCount();
 }
 function nlDeselectAll() {
@@ -2857,7 +2859,9 @@ function nlUpdateRecipCount() {
   if (btn) btn.disabled = n === 0;
 }
 function nlGetSelectedContacts() {
-  return [...state.nl.selectedKeys].map(key => state.flatContacts.find(c => c.key === key)).filter(Boolean);
+  return [...state.nl.selectedKeys]
+    .map(key => state.flatContacts.find(c => c.key === key))
+    .filter(c => c && !c.optOut);  // 送信直前にもoptOut除外（同期後対応）
 }
 
 function nlPopulateIndustryFilter() {
