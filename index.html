@@ -644,16 +644,16 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
             </div>
           </div>
           <div class="card-body">
-            <div class="form-group" style="display:flex;gap:12px;align-items:flex-end;">
-              <div style="flex:1;">
+            <div style="display:flex;gap:12px;margin-bottom:14px;">
+              <div class="form-group" style="flex:1;margin-bottom:0;">
                 <label>テンプレート選択</label>
                 <select class="template-select" id="templateSelect" onchange="applyTemplate()">
                   <option value="">-- テンプレートを選択 --</option>
                 </select>
               </div>
-              <div style="min-width:120px;">
+              <div class="form-group" style="min-width:120px;margin-bottom:0;">
                 <label>担当者</label>
-                <select id="senderStaffSelect" style="width:100%;">
+                <select id="senderStaffSelect">
                   <option value="宮下">宮下</option>
                   <option value="柿岡">柿岡</option>
                   <option value="北山">北山</option>
