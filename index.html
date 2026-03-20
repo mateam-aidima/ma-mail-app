@@ -1098,15 +1098,17 @@ async function maybeInitAll(trySilentAuth = false) {
       gapiClientReady = true;
     } catch(e) { showToast('API初期化エラー: ' + (e.message||e), 'error'); showLoginButtonState(); return; }
   }
+  const loginHint = localStorage.getItem('ma_loginHint') || '';
   try {
     tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: config.clientId, scope: SCOPES, callback: handleAuthCallback
+      client_id: config.clientId, scope: SCOPES, callback: handleAuthCallback,
+      ...(loginHint ? { login_hint: loginHint } : {})
     });
   } catch(e) { showToast('OAuth初期化エラー: ' + (e.message||e), 'error'); showLoginButtonState(); return; }
   if (trySilentAuth && !silentAuthTriggered) {
     silentAuthTriggered = true;
     isSilentAuth = true;
-    tokenClient.requestAccessToken({ prompt: '' });
+    tokenClient.requestAccessToken({ prompt: loginHint ? 'none' : '' });
   }
 }
 
@@ -1124,13 +1126,26 @@ function handleAuthCallback(resp) {
     headers: { Authorization: 'Bearer ' + gapi.client.getToken().access_token }
   }).then(r => r.json()).then(info => {
     state.userEmail = info.email || '';
+    if (state.userEmail) localStorage.setItem('ma_loginHint', state.userEmail);
     document.getElementById('userEmail').textContent = state.userEmail;
     ['senderEmail2','nlSenderEmail'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = state.userEmail; });
     updateSenderDisplays(localStorage.getItem('ma_fromEmail')||'', localStorage.getItem('ma_senderName')||'');
   });
+  startTokenAutoRefresh();
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
   loadAll();
+}
+
+let _tokenRefreshTimer = null;
+function startTokenAutoRefresh() {
+  if (_tokenRefreshTimer) clearInterval(_tokenRefreshTimer);
+  _tokenRefreshTimer = setInterval(() => {
+    if (tokenIssuedAt && tokenClient && Date.now() - tokenIssuedAt > 50 * 60 * 1000) {
+      isSilentAuth = true;
+      tokenClient.requestAccessToken({ prompt: 'none' });
+    }
+  }, 60 * 1000);
 }
 
 function handleLogin() {
