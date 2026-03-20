@@ -1226,9 +1226,83 @@ function loadAll() {
     ? `${state.buyers.length}社（${state.flatContacts.length}名）を読み込みました`
     : 'データが空です。「📊 データ管理」からCSVをインポートしてください';
   showToast(msg, state.buyers.length > 0 ? 'success' : 'info');
+  restoreSession();
 }
 
 function saveBuyers()      { localStorage.setItem(LS.buyers,      JSON.stringify(state.buyers)); }
+
+// ============================================================
+// SESSION STATE (survives page reload within same tab)
+// ============================================================
+const SESS_KEY = 'ma_sess';
+function saveSession() {
+  try {
+    sessionStorage.setItem(SESS_KEY, JSON.stringify({
+      mode:         state.appMode,
+      step:         state.currentStep,
+      nlStep:       state.nl.currentStep,
+      pjId:         document.getElementById('pjSelect')?.value || '',
+      selectedKeys: [...state.selectedKeys],
+      subject:      document.getElementById('emailSubject')?.value || '',
+      body:         document.getElementById('emailBody')?.value || '',
+      nlSelectedPJs:  [...state.nl.selectedPJs],
+      nlSelectedKeys: [...state.nl.selectedKeys],
+      nlSubject:    document.getElementById('nlEmailSubject')?.value || '',
+      nlBody:       document.getElementById('nlEmailBody')?.value || '',
+    }));
+  } catch(e) {}
+}
+function restoreSession() {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(SESS_KEY) || 'null');
+    if (!s) return;
+    // Restore form data
+    if (s.subject) document.getElementById('emailSubject').value = s.subject;
+    if (s.body)    document.getElementById('emailBody').value = s.body;
+    if (s.nlSubject) document.getElementById('nlEmailSubject').value = s.nlSubject;
+    if (s.nlBody)    document.getElementById('nlEmailBody').value = s.nlBody;
+    // Restore individual PJ + selected contacts
+    if (s.pjId) { const el = document.getElementById('pjSelect'); if (el) { el.value = s.pjId; onPJChange(); } }
+    if (s.selectedKeys?.length) { state.selectedKeys = new Set(s.selectedKeys); filterTable(); updateSelectedCount(); }
+    // Restore newsletter state
+    if (s.nlSelectedPJs?.length) state.nl.selectedPJs = new Set(s.nlSelectedPJs);
+    if (s.nlSelectedKeys?.length) { state.nl.selectedKeys = new Set(s.nlSelectedKeys); }
+    // Restore mode (triggers render)
+    setAppMode(s.mode || 'individual');
+    if (s.mode === 'newsletter') { nlRenderPJList(); nlFilterTable(); nlUpdateRecipCount(); }
+    // Restore step (force, bypass validation since data is already restored)
+    const step = s.mode === 'newsletter' ? s.nlStep : s.step;
+    if (step > 1) {
+      if (s.mode === 'newsletter') _nlGoToStepForce(step);
+      else _goToStepForce(step);
+    }
+  } catch(e) { console.warn('Session restore:', e); }
+}
+function _goToStepForce(n) {
+  state.currentStep = n;
+  if (n === 3) preparePreview();
+  [1,2,3].forEach(i => {
+    document.getElementById(`panel${i}`).classList.toggle('hidden', i !== n);
+    const s = document.getElementById(`step${i}`);
+    s.classList.remove('active','completed');
+    if (i < n) s.classList.add('completed');
+    if (i === n) s.classList.add('active');
+  });
+}
+function _nlGoToStepForce(n) {
+  state.nl.currentStep = n;
+  if (n === 3) { nlRenderSelectedPJPreview(); document.getElementById('nlSenderEmail').textContent = state.userEmail; }
+  if (n === 4) nlPreparePreview();
+  [1,2,3,4].forEach(i => {
+    document.getElementById(`nlPanel${i}`).classList.toggle('hidden', i !== n);
+    const s = document.getElementById(`nlStep${i}`);
+    s.classList.remove('active','completed');
+    if (i < n) s.classList.add('completed');
+    if (i === n) s.classList.add('active');
+  });
+  window.scrollTo(0, 0);
+}
+window.addEventListener('beforeunload', saveSession);
 function saveTemplates()   { localStorage.setItem(LS.templates,   JSON.stringify(state.templates)); }
 function savePJList()      { localStorage.setItem(LS.pjList,      JSON.stringify(state.pjList)); }
 function saveSentHistory() { localStorage.setItem(LS.sentHistory, JSON.stringify(state.sentHistory)); }
@@ -2543,6 +2617,7 @@ function goToStep(n) {
     if (i === n) s.classList.add('active');
   });
   window.scrollTo(0, 0);
+  saveSession();
 }
 
 // ============================================================
@@ -2800,6 +2875,7 @@ function setAppMode(mode) {
   }
   // Hide post-send back button when switching modes
   document.getElementById('nlBackToTopBtn')?.classList.add('hidden');
+  saveSession();
 }
 
 // ============================================================
@@ -2827,6 +2903,7 @@ function nlGoToStep(n) {
     if (i === n) s.classList.add('active');
   });
   window.scrollTo(0, 0);
+  saveSession();
 }
 
 // ============================================================
