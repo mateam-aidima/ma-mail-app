@@ -2263,7 +2263,6 @@ function toggleSelect(key) {
   } else {
     const contact = state.flatContacts.find(c => c.key === key);
     if (!contact || !contact.email) { showToast('メールアドレスが未登録のため選択できません', 'error'); return; }
-    if (contact.optOut) { showToast(`${contact.companyName} は配信停止中のため選択できません`, 'error'); return; }
     state.selectedKeys.add(key);
   }
   renderTable();
@@ -2577,12 +2576,6 @@ function replacePlaceholders(text, c) {
 function confirmAndSend() {
   const selected = getSelectedContacts();
   if (selected.length === 0) return;
-  const optOutContacts = selected.filter(c => c.optOut);
-  if (optOutContacts.length > 0) {
-    if (!confirm(`⚠️ 以下${optOutContacts.length}件は配信停止中です：\n`
-      + optOutContacts.map(c => `・${c.companyName}（${c.name}）`).join('\n')
-      + `\n\n送信を続行しますか？`)) return;
-  }
   if (!state.selectedPJ) {
     if (!confirm(`⚠️ PJが未選択のため送信履歴が記録されません。\nこのまま${selected.length}件送信しますか？`)) return;
   } else {
