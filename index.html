@@ -1000,6 +1000,7 @@ function loadGapi() {
 
 let silentAuthTriggered = false;
 let isSilentAuth = false;
+let tokenIssuedAt = null;
 
 function showLoginButtonState() {
   const ls = document.getElementById('loginLoadingState');
@@ -1040,6 +1041,7 @@ function handleAuthCallback(resp) {
     return;
   }
   isSilentAuth = false;
+  tokenIssuedAt = Date.now();
   state.isSignedIn = true;
   fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
     headers: { Authorization: 'Bearer ' + gapi.client.getToken().access_token }
@@ -2258,6 +2260,11 @@ function confirmAndSend() {
 }
 
 async function sendEmails(recipients) {
+  // Check token expiry (tokens last ~1 hour)
+  if (tokenIssuedAt && Date.now() - tokenIssuedAt > 55 * 60 * 1000) {
+    showToast('セッションが切れました。ページを再読み込みしてください', 'error');
+    return;
+  }
   const sendBtn = document.getElementById('sendBtn');
   sendBtn.disabled = true; sendBtn.textContent = '送信中...';
   document.getElementById('sendProgress').classList.remove('hidden');
@@ -2304,7 +2311,13 @@ async function sendEmails(recipients) {
       addLog(`✅ ${contacts[0].companyName} → ${toEmails}${ccNote}`, 'success');
     } catch(e) {
       errorCount++;
-      addLog(`❌ ${contacts[0].companyName} - エラー: ${e.message||e}`, 'error');
+      const errMsg = e?.result?.error?.message || e?.result?.error?.status || e?.message || JSON.stringify(e);
+      const errCode = e?.status || e?.result?.error?.code || '';
+      addLog(`❌ ${contacts[0].companyName} - エラー${errCode ? ' '+errCode : ''}: ${errMsg}`, 'error');
+      if (e?.status === 401 || errMsg?.includes('invalid_grant')) {
+        addLog('⚠️ 認証エラー: ページを再読み込みしてください', 'error');
+        break;
+      }
     }
     if (i < groups.length - 1) await sleep(interval * 1000);
   }
