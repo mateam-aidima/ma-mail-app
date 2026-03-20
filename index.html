@@ -375,6 +375,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
         <button class="tab-btn active" onclick="switchBuyerTab('import',this)">📥 CSVインポート</button>
         <button class="tab-btn" onclick="switchBuyerTab('list',this)">📋 一覧・管理</button>
         <button class="tab-btn" onclick="switchBuyerTab('add',this)">➕ 手動追加</button>
+        <button class="tab-btn" onclick="switchBuyerTab('optout',this)">🚫 配信停止リスト</button>
       </div>
 
       <!-- Tab: Import -->
@@ -414,6 +415,17 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
           <table>
             <thead><tr><th>企業名</th><th>業種</th><th>案件No</th><th>連絡先1</th><th>メール1</th><th></th></tr></thead>
             <tbody id="buyerListBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: OptOut -->
+      <div id="buyerTab-optout" class="tab-content">
+        <div id="optOutStats" style="font-size:13px;color:var(--gray-600);margin-bottom:12px;"></div>
+        <div class="table-wrapper" style="max-height:360px;">
+          <table>
+            <thead><tr><th>企業名</th><th>メールアドレス</th><th></th></tr></thead>
+            <tbody id="optOutListBody"></tbody>
           </table>
         </div>
       </div>
@@ -629,8 +641,8 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
               <option value="見送り">見送り</option>
             </select>
             <select id="optOutFilter" onchange="filterTable()">
-              <option value="exclude">配信停止を除く</option>
               <option value="all">全て表示</option>
+              <option value="exclude">配信停止を除く</option>
               <option value="only">配信停止のみ</option>
             </select>
             <button class="btn btn-outline btn-sm" onclick="selectAllVisible()">全選択</button>
@@ -1396,6 +1408,7 @@ function switchBuyerTab(name, btn) {
   btn.classList.add('active');
   document.getElementById(`buyerTab-${name}`).classList.add('active');
   if (name === 'list') renderBuyerList();
+  if (name === 'optout') renderOptOutList();
 }
 
 function renderBuyerStats() {
@@ -1432,6 +1445,39 @@ function renderBuyerList() {
       </td>
     </tr>`;
   }).join('');
+}
+
+function renderOptOutList() {
+  const optOuts = state.buyers.filter(b => b.optOut);
+  const statsEl = document.getElementById('optOutStats');
+  const tbody = document.getElementById('optOutListBody');
+  if (!statsEl || !tbody) return;
+  statsEl.textContent = `配信停止：${optOuts.length}社`;
+  if (optOuts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--gray-400);">配信停止のリストはありません</td></tr>';
+    return;
+  }
+  tbody.innerHTML = optOuts.map(b => {
+    const emails = (b.contacts || []).filter(c => c.email).map(c =>
+      `<div style="font-size:12px;">${escHtml(c.name ? c.name + '　' : '')}${escHtml(c.email)}</div>`
+    ).join('') || '<span style="color:var(--gray-400);font-size:12px;">メールなし</span>';
+    return `<tr>
+      <td><strong>${escHtml(b.companyName)}</strong></td>
+      <td>${emails}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-outline btn-sm" style="font-size:12px;" onclick="restoreOptOut('${b.id}')">配信再開</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function restoreOptOut(buyerId) {
+  const idx = state.buyers.findIndex(b => b.id === buyerId);
+  if (idx < 0) return;
+  state.buyers[idx].optOut = false;
+  saveBuyers(); rebuildFlatContacts(); filterTable();
+  renderOptOutList();
+  showToast(`${state.buyers[idx].companyName} の配信停止を解除しました`, 'success');
 }
 
 // ============================================================
