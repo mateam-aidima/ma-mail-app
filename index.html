@@ -100,10 +100,12 @@ input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-colo
 .nl-pj-card .pj-card-meta { font-size:12px; color:var(--gray-500); margin-top:4px; }
 .nl-pj-card .pj-card-desc { font-size:12px; color:var(--gray-600); margin-top:6px; line-height:1.6; border-top:1px solid var(--gray-200); padding-top:6px; white-space:pre-wrap; }
 /* Filter bar */
-.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
-.filter-bar input, .filter-bar select { padding: 7px 10px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 13px; background: white; }
-.filter-bar input { flex: 1; min-width: 180px; }
-.filter-bar select { min-width: 130px; }
+.filter-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.filter-bar input, .filter-bar select { padding: 7px 10px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 13px; background: white; box-sizing: border-box; }
+#searchInput    { flex: 1; min-width: 160px; }
+#industryFilter { width: 100px; flex: none; }
+#sentFilter     { width: 110px; flex: none; }
+#followUpFilter { width: 110px; flex: none; }
 /* PJ Selector */
 .pj-panel { background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
 .pj-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
@@ -643,7 +645,20 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
           </div>
 
           <div class="table-wrapper">
-            <table>
+            <table style="table-layout:fixed;">
+              <colgroup>
+                <col style="width:36px;">   <!-- cb -->
+                <col style="width:48px;">   <!-- No. -->
+                <col style="width:160px;">  <!-- 企業名 -->
+                <col style="width:100px;">  <!-- 業種 -->
+                <col style="width:90px;">   <!-- 連絡方法 -->
+                <col style="width:100px;">  <!-- 名前 -->
+                <col style="width:100px;">  <!-- 役職 -->
+                <col style="width:200px;">  <!-- メールアドレス -->
+                <col style="width:90px;">   <!-- 送信状態 -->
+                <col style="width:80px;">   <!-- フォロー -->
+                <col>                       <!-- メモ (残り) -->
+              </colgroup>
               <thead>
                 <tr>
                   <th class="cb-cell"><input type="checkbox" id="selectAllCb" onchange="toggleSelectAll(this)"></th>
