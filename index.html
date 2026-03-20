@@ -304,6 +304,36 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
         </div>
       </div>
     </div>
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--gray-200);">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius);padding:12px 14px;">
+        <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px;">☁️ Google Drive同期</div>
+        <div style="font-size:12px;color:var(--gray-600);margin-bottom:10px;line-height:1.7;">
+          買い手データ・PJ・テンプレート・送信履歴をGoogleドライブのファイル（ma_app_data.json）に保存し、チームで共有できます。<br>
+          ドライブ上でファイルをチームメンバーと共有すると、全員が同じデータを使えます。
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="font-size:12px;">接続中のファイルID</label>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="settingsDriveFileId" placeholder="（未接続）" style="flex:1;font-family:monospace;font-size:11px;" readonly>
+            <button type="button" class="btn btn-outline btn-sm" onclick="openDriveFile()" title="Driveで開く">📂</button>
+          </div>
+          <div class="help-text">このIDをチームメンバーに共有するか、GoogleドライブでファイルをメンバーにShare（共有）してください。</div>
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="font-size:12px;">別のファイルIDに切り替え（チームの共有ファイルIDを貼り付け）</label>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="settingsDriveNewFileId" placeholder="1AbCdEf..." style="flex:1;font-family:monospace;font-size:11px;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="switchDriveFile()">切替</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="driveLoadNow()">🔄 今すぐ読み込む</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="driveSaveNow()">💾 今すぐ保存する</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="driveDisconnect()">🔌 接続解除</button>
+        </div>
+        <div id="driveSyncInfo" style="font-size:11px;color:var(--gray-500);margin-top:8px;"></div>
+      </div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeSenderSettings()">キャンセル</button>
       <button class="btn btn-primary" onclick="saveSenderSettings()">保存</button>
@@ -866,6 +896,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
     <h1 onclick="setAppMode('individual');goToStep(1);" style="cursor:pointer;" title="トップへ戻る">📧 M&A 案件メール配信システム</h1>
     <div class="header-right">
       <span class="user-info" id="userEmail"></span>
+      <span id="syncStatus" style="font-size:12px;opacity:0.8;margin-right:4px;"></span>
       <button class="btn-logout" onclick="showSentHistory()">📋 送信履歴</button>
       <button class="btn-logout" onclick="showSenderSettings()">⚙️ 設定</button>
       <button class="btn-logout" onclick="showManual()" style="background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.5);">📖 マニュアル</button>
@@ -1337,7 +1368,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
 // ============================================================
 // CONFIG & STATE
 // ============================================================
-const SCOPES = 'https://www.googleapis.com/auth/gmail.send';
+const SCOPES = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive';
 const LS = {
   buyers:      'ma_buyers_v2',
   templates:   'ma_templates_v2',
@@ -1426,7 +1457,10 @@ async function maybeInitAll(trySilentAuth = false) {
   if (!gapiClientReady) {
     try {
       await gapi.client.init({
-        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest']
+        discoveryDocs: [
+          'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest',
+          'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+        ]
       });
       gapiClientReady = true;
     } catch(e) { showToast('API初期化エラー: ' + (e.message||e), 'error'); showLoginButtonState(); return; }
@@ -1468,6 +1502,7 @@ function handleAuthCallback(resp) {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
   loadAll();
+  driveInit();
 }
 
 let _tokenRefreshTimer = null;
@@ -1496,6 +1531,7 @@ function handleLogin() {
 }
 
 function handleLogout() {
+  if (_driveSaveTimer) { clearTimeout(_driveSaveTimer); _doSaveToDrive(true); }
   const t = gapi.client.getToken();
   if (t) { google.accounts.oauth2.revoke(t.access_token); gapi.client.setToken(null); }
   state.isSignedIn = false;
@@ -1540,7 +1576,7 @@ function loadAll() {
   restoreSession();
 }
 
-function saveBuyers()      { localStorage.setItem(LS.buyers,      JSON.stringify(state.buyers)); }
+function saveBuyers()      { localStorage.setItem(LS.buyers,      JSON.stringify(state.buyers));      scheduleDriveSave(); }
 
 // ============================================================
 // SESSION STATE (survives page reload within same tab)
@@ -1614,9 +1650,9 @@ function _nlGoToStepForce(n) {
   window.scrollTo(0, 0);
 }
 window.addEventListener('beforeunload', saveSession);
-function saveTemplates()   { localStorage.setItem(LS.templates,   JSON.stringify(state.templates)); }
-function savePJList()      { localStorage.setItem(LS.pjList,      JSON.stringify(state.pjList)); }
-function saveSentHistory() { localStorage.setItem(LS.sentHistory, JSON.stringify(state.sentHistory)); }
+function saveTemplates()   { localStorage.setItem(LS.templates,   JSON.stringify(state.templates));   scheduleDriveSave(); }
+function savePJList()      { localStorage.setItem(LS.pjList,      JSON.stringify(state.pjList));      scheduleDriveSave(); }
+function saveSentHistory() { localStorage.setItem(LS.sentHistory, JSON.stringify(state.sentHistory)); scheduleDriveSave(); }
 function savePjPdfs() {
   try { localStorage.setItem(LS.pjPdfs, JSON.stringify(state.pjPdfs)); }
   catch(e) { showToast('PDFの保存に失敗しました（ブラウザの容量不足の可能性があります）', 'error'); }
@@ -1627,6 +1663,12 @@ function showSenderSettings() {
   document.getElementById('settingsSenderName').value   = localStorage.getItem('ma_senderName') || '';
   document.getElementById('settingsSendInterval').value = localStorage.getItem('ma_sendInterval') || '3';
   document.getElementById('settingsGasUrl').value       = localStorage.getItem('ma_gasUrl') || '';
+  const fileId = localStorage.getItem('ma_drive_file_id') || '';
+  document.getElementById('settingsDriveFileId').value  = fileId;
+  document.getElementById('settingsDriveNewFileId').value = '';
+  const infoEl = document.getElementById('driveSyncInfo');
+  const lastSaved = localStorage.getItem('ma_drive_last_saved');
+  if (infoEl) infoEl.textContent = lastSaved ? `最終同期: ${lastSaved}` : fileId ? '未同期' : 'Driveに未接続';
   document.getElementById('senderSettingsModal').classList.remove('hidden');
 }
 function closeSenderSettings() {
@@ -1655,6 +1697,192 @@ function saveSenderSettings() {
   closeSenderSettings();
   showToast('設定を保存しました', 'success');
 }
+// ============================================================
+// GOOGLE DRIVE SYNC
+// ============================================================
+const DRIVE_FILE_KEY = 'ma_drive_file_id';
+let _driveSaveTimer = null;
+let _driveInitialized = false;
+
+function getDriveToken() {
+  return gapi.client?.getToken?.()?.access_token || null;
+}
+
+async function driveInit() {
+  const token = getDriveToken();
+  if (!token) return;
+  updateSyncStatus('init');
+  try {
+    let fileId = localStorage.getItem(DRIVE_FILE_KEY);
+    if (!fileId) {
+      fileId = await driveSearchFile(token);
+    }
+    if (fileId) {
+      localStorage.setItem(DRIVE_FILE_KEY, fileId);
+      const data = await driveFetchData(token, fileId);
+      if (data) applyDriveData(data);
+      else updateSyncStatus('saved');
+    } else {
+      fileId = await driveCreateFile(token);
+      if (fileId) {
+        localStorage.setItem(DRIVE_FILE_KEY, fileId);
+        await _doSaveToDrive(true);
+      }
+    }
+    _driveInitialized = true;
+  } catch(e) {
+    console.warn('Drive init error:', e);
+    updateSyncStatus('error');
+  }
+}
+
+async function driveSearchFile(token) {
+  const q = encodeURIComponent("name='ma_app_data.json' and trashed=false");
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=modifiedTime+desc&fields=files(id,name,modifiedTime,lastModifyingUser)&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+    { headers: { Authorization: 'Bearer ' + token } }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.files?.[0]?.id || null;
+}
+
+async function driveCreateFile(token) {
+  const boundary = 'maapp_boundary';
+  const meta = JSON.stringify({ name: 'ma_app_data.json', mimeType: 'application/json' });
+  const body = JSON.stringify({ version: 1, buyers: [], templates: [], pjList: [], sentHistory: [] });
+  const payload = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`;
+  const res = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true',
+    { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': `multipart/related; boundary=${boundary}` }, body: payload }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.id || null;
+}
+
+async function driveFetchData(token, fileId) {
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`,
+    { headers: { Authorization: 'Bearer ' + token } }
+  );
+  if (!res.ok) return null;
+  try { return await res.json(); } catch(e) { return null; }
+}
+
+function applyDriveData(data) {
+  if (Array.isArray(data.buyers))      { state.buyers      = data.buyers;      localStorage.setItem(LS.buyers,      JSON.stringify(data.buyers)); }
+  if (Array.isArray(data.templates))   { state.templates   = data.templates;   localStorage.setItem(LS.templates,   JSON.stringify(data.templates)); }
+  if (Array.isArray(data.pjList))      { state.pjList      = data.pjList;      localStorage.setItem(LS.pjList,      JSON.stringify(data.pjList)); }
+  if (Array.isArray(data.sentHistory)) { state.sentHistory = data.sentHistory; localStorage.setItem(LS.sentHistory, JSON.stringify(data.sentHistory)); }
+  // Migrate buyer-level optOut after applying Drive data
+  state.buyers.forEach(b => { if (b.optOut) { (b.contacts||[]).forEach(c => { if (!c.optOut) c.optOut = true; }); delete b.optOut; } });
+  rebuildFlatContacts(); populateFilters(); filterTable(); renderPJSelect(); renderTemplateSelect(); nlRenderPJList();
+  updateSyncStatus('saved');
+  if (data.lastSavedBy && data.lastSavedBy !== state.userEmail) {
+    showToast(`☁️ Driveから読み込みました（最終更新: ${data.lastSavedBy}）`, 'success');
+  }
+}
+
+function scheduleDriveSave() {
+  if (!_driveInitialized) return;
+  if (_driveSaveTimer) clearTimeout(_driveSaveTimer);
+  updateSyncStatus('pending');
+  _driveSaveTimer = setTimeout(() => _doSaveToDrive(false), 3000);
+}
+
+async function _doSaveToDrive(silent = false) {
+  const token = getDriveToken();
+  const fileId = localStorage.getItem(DRIVE_FILE_KEY);
+  if (!token || !fileId) return;
+  if (!silent) updateSyncStatus('saving');
+  const payload = JSON.stringify({
+    version: 1,
+    buyers:      state.buyers,
+    templates:   state.templates,
+    pjList:      state.pjList,
+    sentHistory: state.sentHistory,
+    lastSaved:   new Date().toLocaleString('ja-JP'),
+    lastSavedBy: state.userEmail
+  });
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media&supportsAllDrives=true`,
+      { method: 'PATCH', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: payload }
+    );
+    if (res.ok) {
+      const now = new Date().toLocaleString('ja-JP');
+      localStorage.setItem('ma_drive_last_saved', now);
+      updateSyncStatus('saved');
+    } else { updateSyncStatus('error'); }
+  } catch(e) { updateSyncStatus('error'); }
+}
+
+function updateSyncStatus(status) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const map = { init: '☁️ 接続中...', pending: '🔄 同期待ち', saving: '🔄 同期中...', saved: '☁️ 同期済', error: '⚠️ 同期エラー' };
+  el.textContent = map[status] || '';
+  el.style.color = status === 'error' ? '#fca5a5' : status === 'saved' ? '#86efac' : 'rgba(255,255,255,0.8)';
+}
+
+async function driveSaveNow() {
+  if (!_driveInitialized && !localStorage.getItem(DRIVE_FILE_KEY)) {
+    showToast('Driveに接続されていません', 'error'); return;
+  }
+  _driveInitialized = true;
+  await _doSaveToDrive(false);
+  showToast('Driveに保存しました', 'success');
+  const infoEl = document.getElementById('driveSyncInfo');
+  if (infoEl) infoEl.textContent = `最終同期: ${localStorage.getItem('ma_drive_last_saved')||''}`;
+}
+
+async function driveLoadNow() {
+  const token = getDriveToken();
+  const fileId = localStorage.getItem(DRIVE_FILE_KEY);
+  if (!token || !fileId) { showToast('Driveに接続されていません', 'error'); return; }
+  updateSyncStatus('init');
+  const data = await driveFetchData(token, fileId);
+  if (data) { applyDriveData(data); showToast('Driveから読み込みました', 'success'); }
+  else { showToast('読み込みに失敗しました', 'error'); updateSyncStatus('error'); }
+}
+
+async function switchDriveFile() {
+  const newId = document.getElementById('settingsDriveNewFileId').value.trim();
+  if (!newId) { showToast('ファイルIDを入力してください', 'error'); return; }
+  const token = getDriveToken();
+  if (!token) { showToast('ログインが必要です', 'error'); return; }
+  updateSyncStatus('init');
+  const data = await driveFetchData(token, newId);
+  if (!data) { showToast('ファイルが見つからないか、アクセス権限がありません', 'error'); updateSyncStatus('error'); return; }
+  localStorage.setItem(DRIVE_FILE_KEY, newId);
+  document.getElementById('settingsDriveFileId').value = newId;
+  document.getElementById('settingsDriveNewFileId').value = '';
+  _driveInitialized = true;
+  applyDriveData(data);
+  showToast('共有ファイルに接続しました', 'success');
+  const infoEl = document.getElementById('driveSyncInfo');
+  if (infoEl) infoEl.textContent = `接続先変更完了。最終更新: ${data.lastSavedBy||''}`;
+}
+
+function driveDisconnect() {
+  if (!confirm('Drive同期を解除しますか？\nローカルのデータは残ります。')) return;
+  localStorage.removeItem(DRIVE_FILE_KEY);
+  localStorage.removeItem('ma_drive_last_saved');
+  _driveInitialized = false;
+  document.getElementById('settingsDriveFileId').value = '';
+  document.getElementById('syncStatus').textContent = '';
+  const infoEl = document.getElementById('driveSyncInfo');
+  if (infoEl) infoEl.textContent = 'Driveから切断しました（ローカルデータのみ）';
+  showToast('Drive同期を解除しました', 'success');
+}
+
+function openDriveFile() {
+  const fileId = localStorage.getItem(DRIVE_FILE_KEY);
+  if (!fileId) { showToast('ファイルIDがありません', 'error'); return; }
+  window.open(`https://drive.google.com/file/d/${fileId}/view`, '_blank');
+}
+
 const GAS_CODE = `// Google Apps Script - 配信停止管理
 // デプロイ: ウェブアプリとして公開 > 全員がアクセス可能
 
