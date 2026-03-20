@@ -561,7 +561,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
 <!-- MAIN APP -->
 <div id="mainApp" class="hidden">
   <div class="header">
-    <h1>📧 M&A 案件メール配信システム</h1>
+    <h1 onclick="setAppMode('individual');goToStep(1);" style="cursor:pointer;" title="トップへ戻る">📧 M&A 案件メール配信システム</h1>
     <div class="header-right">
       <span class="user-info" id="userEmail"></span>
       <button class="btn-logout" onclick="showSentHistory()">📋 送信履歴</button>
@@ -1008,6 +1008,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
                 <div class="action-bar">
                   <button class="btn btn-outline" onclick="nlGoToStep(3)">← 戻る</button>
                   <button class="btn btn-danger btn-lg" id="nlSendBtn" onclick="nlConfirmAndSend()">📨 一括送信する</button>
+                  <button class="btn btn-primary btn-lg hidden" id="nlBackToTopBtn" onclick="setAppMode('individual');goToStep(1);">🏠 トップに戻る</button>
                 </div>
               </div>
             </div>
@@ -2797,6 +2798,8 @@ function setAppMode(mode) {
     const el = document.getElementById('nlSenderEmail');
     if (el) el.textContent = state.userEmail;
   }
+  // Hide post-send back button when switching modes
+  document.getElementById('nlBackToTopBtn')?.classList.add('hidden');
 }
 
 // ============================================================
@@ -3072,6 +3075,7 @@ async function nlSendEmails(recipients) {
 
   document.getElementById('nlSendStatusText').textContent = `送信完了: 成功${successCount}件 / エラー${errorCount}件`;
   sendBtn.disabled = false; sendBtn.textContent = '📨 一括送信する';
+  document.getElementById('nlBackToTopBtn').classList.remove('hidden');
   showToast(errorCount === 0 ? `${successCount}件を送信しました` : `成功${successCount} / エラー${errorCount}`, errorCount === 0 ? 'success' : 'error');
 }
 
