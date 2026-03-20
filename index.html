@@ -638,11 +638,6 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
               <option value="検討中">検討中</option>
               <option value="見送り">見送り</option>
             </select>
-            <select id="optOutFilter" onchange="filterTable()">
-              <option value="all">全て表示</option>
-              <option value="exclude">配信停止を除く</option>
-              <option value="only">配信停止のみ</option>
-            </select>
             <button class="btn btn-outline btn-sm" onclick="selectAllVisible()">全選択</button>
             <button class="btn btn-outline btn-sm" onclick="deselectAll()">全解除</button>
           </div>
@@ -661,12 +656,11 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
                   <th>メールアドレス</th>
                   <th>送信状態</th>
                   <th>フォロー</th>
-                  <th>配停</th>
                   <th>メモ</th>
                 </tr>
               </thead>
               <tbody id="buyerTableBody">
-                <tr><td colspan="12" style="text-align:center;padding:40px;color:var(--gray-400);">「📊 データ管理」からCSVをインポートするか、手動で買い手を追加してください</td></tr>
+                <tr><td colspan="11" style="text-align:center;padding:40px;color:var(--gray-400);">「📊 データ管理」からCSVをインポートするか、手動で買い手を追加してください</td></tr>
               </tbody>
             </table>
           </div>
@@ -2249,7 +2243,7 @@ function filterTable() {
   const industry      = document.getElementById('industryFilter').value;
   const sentFilter    = document.getElementById('sentFilter').value;
   const followUpFilter= document.getElementById('followUpFilter')?.value || '';
-  const optOutFilter  = document.getElementById('optOutFilter')?.value || 'exclude';
+  // optOut does not apply to individual send (newsletter only)
 
   state.filteredContacts = state.flatContacts.filter(c => {
     if (search && !c.companyName.toLowerCase().includes(search) && !c.name.toLowerCase().includes(search)) return false;
@@ -2257,8 +2251,6 @@ function filterTable() {
     if (sentFilter === 'unsent' && isSentToDeal(c.email)) return false;
     if (sentFilter === 'sent'   && !isSentToDeal(c.email)) return false;
     if (followUpFilter && (c.followUp||{}).status !== followUpFilter) return false;
-    if (optOutFilter === 'exclude' && c.optOut) return false;
-    if (optOutFilter === 'only'    && !c.optOut) return false;
     return true;
   });
   renderTable();
@@ -2273,15 +2265,14 @@ function followUpBadgeHtml(followUp) {
 function renderTable() {
   const tbody = document.getElementById('buyerTableBody');
   if (state.flatContacts.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--gray-400);">「📊 データ管理」からCSVをインポートするか、手動で買い手を追加してください</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--gray-400);">「📊 データ管理」からCSVをインポートするか、手動で買い手を追加してください</td></tr>';
   } else if (state.filteredContacts.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--gray-400);">該当する候補が見つかりません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--gray-400);">該当する候補が見つかりません</td></tr>';
   } else {
     tbody.innerHTML = state.filteredContacts.map(c => {
       const sent = isSentToDeal(c.email);
       const isSelected = state.selectedKeys.has(c.key);
-      const optOutClass = c.optOut ? 'optout-row' : '';
-      const rowClass = isSelected ? 'selected' : (sent ? 'sent-row' : optOutClass);
+      const rowClass = isSelected ? 'selected' : (sent ? 'sent-row' : '');
       const sentBadge = !state.selectedPJ ? '' :
         sent ? '<span class="badge badge-sent">送信済</span>'
              : '<span class="badge badge-unsent">未送信</span>';
@@ -2289,7 +2280,7 @@ function renderTable() {
       return `<tr class="${rowClass}" onclick="toggleRow('${c.key}',event)">
         <td class="cb-cell"><input type="checkbox" ${isSelected?'checked':''} onchange="toggleSelect('${c.key}')" onclick="event.stopPropagation()"></td>
         <td>${escHtml(c.caseNo)}</td>
-        <td class="company-cell" title="${escHtml(c.companyName)}"><strong>${escHtml(c.companyName)}</strong>${c.optOut?'<span class="badge badge-optout" style="margin-left:4px;font-size:10px;">配停</span>':''}</td>
+        <td class="company-cell" title="${escHtml(c.companyName)}"><strong>${escHtml(c.companyName)}</strong></td>
         <td>${escHtml(c.industry)}</td>
         <td>${methodBadgeHtml(c.contactMethod)}</td>
         <td>${escHtml(c.name)}</td>
@@ -2297,7 +2288,6 @@ function renderTable() {
         <td class="email-cell" title="${escHtml(c.email)}">${c.email || '<span style="color:var(--gray-400)">未登録</span>'} ${c.mailType==='cc'?'<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">CC</span>':''}</td>
         <td>${sentBadge}</td>
         <td>${followUpBadgeHtml(c.followUp)}</td>
-        <td style="text-align:center;"><button class="btn btn-sm" style="padding:2px 6px;font-size:14px;background:none;border:none;cursor:pointer;" onclick="event.stopPropagation();toggleOptOut('${c.key}')" title="${c.optOut?'配信停止中（クリックで解除）':'クリックで配信停止'}">${c.optOut?'🚫':'✅'}</button></td>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(c.memo||'')}">${escHtml(memoShort)}</td>
       </tr>`;
     }).join('');
