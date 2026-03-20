@@ -2662,13 +2662,18 @@ async function sendEmails(recipients) {
 // Convert plain text email body to HTML for newsletter sending
 // Turns newlines → <br>, escapes HTML, converts unsubscribe URL to clickable link
 function nlToHtmlBody(text) {
+  // Step 1: Extract unsubscribe URL BEFORE HTML escaping (& in query string must be preserved)
+  const UNSUB = '\x01UNSUB\x01';
+  let unsubLink = '';
+  text = text.replace(/配信停止はこちら：(https?:\/\/\S+)/g, (_, url) => {
+    unsubLink = `<a href="${url}" style="color:#6b7280;font-size:12px;">配信停止はこちら</a>`;
+    return UNSUB;
+  });
+  // Step 2: HTML-escape and convert newlines
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   let html = esc(text).replace(/\n/g, '<br>\n');
-  // "配信停止はこちら：https://..." → clickable link
-  html = html.replace(
-    /配信停止はこちら：(https?:\/\/[^\s<&]+)/g,
-    (_, url) => `<a href="${url}" style="color:#6b7280;font-size:12px;">配信停止はこちら</a>`
-  );
+  // Step 3: Restore the link (already safe HTML, not re-escaped)
+  if (unsubLink) html = html.replace(UNSUB, unsubLink);
   return `<div style="font-family:'Hiragino Sans',Meiryo,sans-serif;font-size:14px;line-height:1.8;color:#333;max-width:600px;">${html}</div>`;
 }
 
