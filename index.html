@@ -610,15 +610,7 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
             <div id="pjDetail" class="hidden">
               <div class="pj-info" id="pjInfoBox"></div>
               <div class="pj-upload" id="pjUploadArea">
-                <div class="upload-compact" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-                  <span style="font-size:18px;flex-shrink:0;">📄</span>
-                  <div>
-                    <div style="font-size:12px;font-weight:600;color:var(--gray-600);">ノンネームシート（PDF）</div>
-                    <div style="font-size:11px;color:var(--gray-400);">クリックして選択 またはドラッグ＆ドロップ</div>
-                  </div>
-                </div>
-                <input type="file" id="fileInput" accept=".pdf" style="display:none" onchange="handleFileUpload(this)">
-                <div id="fileList"></div>
+                <div id="step1PdfStatus" style="font-size:12px;color:var(--gray-500);padding:4px 0;"></div>
                 <div id="pdfExtractInfo"></div>
               </div>
             </div>
@@ -2040,18 +2032,13 @@ function onPJChange() {
     if (savedPdf) {
       state.attachedFile = { name: savedPdf.name, size: savedPdf.size || 0 };
       state.attachedFileBase64 = savedPdf.base64;
-      showPdfFileInfo(savedPdf.name, savedPdf.size || 0);
     } else {
       state.attachedFile = null; state.attachedFileBase64 = null;
-      document.getElementById('fileInput').value = '';
-      document.getElementById('uploadArea').classList.remove('has-file');
-      document.getElementById('fileList').innerHTML = '';
     }
+    updateStep1PdfStatus();
   } else {
     detail.classList.add('hidden');
     state.attachedFile = null; state.attachedFileBase64 = null;
-    document.getElementById('uploadArea').classList.remove('has-file');
-    document.getElementById('fileList').innerHTML = '';
   }
   filterTable();
 }
@@ -2072,14 +2059,14 @@ function renderPJMgmtList() {
     return;
   }
   area.innerHTML = state.pjList.map(p => {
-    const hasPdf = !!state.pjPdfs[p.pjId];
+    const pdf = state.pjPdfs[p.pjId];
+    const safeId = escHtml(p.pjId);
     return `<div style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;background:white;">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-weight:700;font-size:15px;color:var(--primary);flex:1;">${escHtml(p.pjId)}</span>
+        <span style="font-weight:700;font-size:15px;color:var(--primary);flex:1;">${safeId}</span>
         ${p.industry ? `<span class="badge badge-primary">${escHtml(p.industry)}</span>` : ''}
-        ${hasPdf ? `<span class="badge badge-success">📄 PDF保存済</span>` : ''}
-        <button class="btn btn-outline btn-sm" onclick="closePJMgmt();showEditPJModal('${escHtml(p.pjId)}')">✏️ 編集</button>
-        <button class="btn btn-danger btn-sm" onclick="deletePJ('${escHtml(p.pjId)}')">🗑️ 削除</button>
+        <button class="btn btn-outline btn-sm" onclick="closePJMgmt();showEditPJModal('${safeId}')">✏️ 編集</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePJ('${safeId}')">🗑️ 削除</button>
       </div>
       ${p.desc ? `<div style="font-size:12px;color:var(--gray-500);margin-top:6px;white-space:pre-wrap;">${escHtml(p.desc)}</div>` : ''}
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--gray-600);">
@@ -2088,8 +2075,64 @@ function renderPJMgmtList() {
         ${p.location ? `<span>所在地：${escHtml(p.location)}</span>` : ''}
         ${p.sellReason ? `<span>売却理由：${escHtml(p.sellReason)}</span>` : ''}
       </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--gray-100);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--gray-500);font-weight:600;">📎 ノンネームPDF：</span>
+        ${pdf
+          ? `<span style="font-size:12px;color:var(--gray-700);">📄 ${escHtml(pdf.name)}</span>
+             <button class="btn btn-outline btn-sm" style="font-size:11px;padding:2px 8px;" onclick="document.getElementById('pjMgmtPdfInput_${safeId}').click()">変更</button>
+             <button class="btn btn-danger btn-sm" style="font-size:11px;padding:2px 8px;" onclick="removePJMgmtPdf('${safeId}')">削除</button>`
+          : `<button class="btn btn-outline btn-sm" style="font-size:11px;padding:2px 8px;" onclick="document.getElementById('pjMgmtPdfInput_${safeId}').click()">＋ PDFをアップロード</button>
+             <span style="font-size:11px;color:var(--gray-400);">アップロードすると案件情報を自動抽出できます</span>`
+        }
+        <input type="file" id="pjMgmtPdfInput_${safeId}" accept=".pdf" style="display:none" onchange="handlePJMgmtPdfUpload('${safeId}',this)">
+      </div>
     </div>`;
   }).join('');
+}
+
+function handlePJMgmtPdfUpload(pjId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.type !== 'application/pdf') { showToast('PDFファイルのみ可', 'error'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const base64 = e.target.result.split(',')[1];
+    state.pjPdfs[pjId] = { name: file.name, base64, size: file.size };
+    savePjPdfs();
+    if (state.selectedPJ?.pjId === pjId) {
+      state.attachedFile = { name: file.name, size: file.size };
+      state.attachedFileBase64 = base64;
+      updateStep1PdfStatus();
+      extractTextFromPdf(base64).then(text => showPdfExtractInfo(parseNonNameSheet(text))).catch(() => {});
+    }
+    renderPJMgmtList();
+    showToast(`${pjId} のPDFを保存しました`, 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePJMgmtPdf(pjId) {
+  delete state.pjPdfs[pjId];
+  savePjPdfs();
+  if (state.selectedPJ?.pjId === pjId) {
+    state.attachedFile = null; state.attachedFileBase64 = null;
+    updateStep1PdfStatus();
+    const infoEl = document.getElementById('pdfExtractInfo');
+    if (infoEl) infoEl.innerHTML = '';
+    _extractedPdfInfo = null;
+  }
+  renderPJMgmtList();
+  showToast(`${pjId} のPDFを削除しました`, 'success');
+}
+
+function updateStep1PdfStatus() {
+  const el = document.getElementById('step1PdfStatus');
+  if (!el) return;
+  if (state.attachedFile) {
+    el.innerHTML = `📄 <b style="color:var(--gray-700);">${escHtml(state.attachedFile.name)}</b> <span style="color:var(--success);font-weight:600;">保存済</span> <span style="color:var(--gray-400);">— PJ一覧・編集から変更できます</span>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--gray-400);">PDFなし — 添付する場合は「PJ一覧・編集」からアップロードしてください</span>`;
+  }
 }
 
 function deletePJ(pjId) {
