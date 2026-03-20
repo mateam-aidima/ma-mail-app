@@ -945,7 +945,10 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
                   <td style="padding:5px 6px;">
                     <select id="industryFilter" onchange="filterTable()" style="width:100%;box-sizing:border-box;padding:5px 4px;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:12px;background:white;"><option value="">全業種</option></select>
                   </td>
-                  <td colspan="4"></td>
+                  <td style="padding:5px 6px;">
+                    <select id="contactMethodFilter" onchange="filterTable()" style="width:100%;box-sizing:border-box;padding:5px 4px;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:12px;background:white;"><option value="">全連絡方法</option></select>
+                  </td>
+                  <td colspan="3"></td>
                   <td style="padding:5px 6px;">
                     <select id="sentFilter" onchange="filterTable()" style="width:100%;box-sizing:border-box;padding:5px 4px;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:12px;background:white;">
                       <option value="all">全員表示</option>
@@ -2685,20 +2688,28 @@ function populateFilters() {
   const sel = document.getElementById('industryFilter');
   sel.innerHTML = '<option value="">全業種</option>' +
     industries.map(i => `<option value="${escHtml(i)}">${escHtml(i)}</option>`).join('');
+  const methods = [...new Set(state.buyers.map(b => b.contactMethod).filter(Boolean))].sort();
+  const msel = document.getElementById('contactMethodFilter');
+  if (msel) {
+    msel.innerHTML = '<option value="">全連絡方法</option>' +
+      methods.map(m => `<option value="${escHtml(m)}">${escHtml(m)}</option>`).join('');
+  }
   nlPopulateIndustryFilter();
   nlFilterTable();
 }
 
 function filterTable() {
-  const search        = document.getElementById('searchInput').value.toLowerCase();
-  const industry      = document.getElementById('industryFilter').value;
-  const sentFilter    = document.getElementById('sentFilter').value;
-  const followUpFilter= document.getElementById('followUpFilter')?.value || '';
+  const search              = document.getElementById('searchInput').value.toLowerCase();
+  const industry            = document.getElementById('industryFilter').value;
+  const contactMethodFilter = document.getElementById('contactMethodFilter')?.value || '';
+  const sentFilter          = document.getElementById('sentFilter').value;
+  const followUpFilter      = document.getElementById('followUpFilter')?.value || '';
   // optOut does not apply to individual send (newsletter only)
 
   state.filteredContacts = state.flatContacts.filter(c => {
     if (search && !c.companyName.toLowerCase().includes(search) && !c.name.toLowerCase().includes(search)) return false;
     if (industry && c.industry !== industry) return false;
+    if (contactMethodFilter && c.contactMethod !== contactMethodFilter) return false;
     if (sentFilter === 'unsent' && isSentToDeal(c.email)) return false;
     if (sentFilter === 'sent'   && !isSentToDeal(c.email)) return false;
     if (followUpFilter && (c.followUp||{}).status !== followUpFilter) return false;
