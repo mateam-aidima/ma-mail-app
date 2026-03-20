@@ -303,7 +303,6 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
           <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;font-size:11px;" onclick="showGasSetupGuide()">📋 GASセットアップ手順を見る</button>
         </div>
       </div>
-    </div>
       <hr style="margin:12px 0;border:none;border-top:1px solid var(--gray-200);">
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius);padding:12px 14px;">
         <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px;">☁️ Google Drive同期</div>
@@ -355,10 +354,12 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
         <summary style="cursor:pointer;font-size:13px;color:var(--primary);font-weight:600;">📋 Google Cloud Console 設定手順</summary>
         <div style="font-size:12px;color:var(--gray-600);margin-top:8px;padding:12px;background:var(--gray-50);border-radius:var(--radius);line-height:1.8;">
           1. <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> にアクセス<br>
-          2. プロジェクトを作成し <b>Gmail API</b> を有効化<br>
+          2. プロジェクトを作成し <b>Gmail API</b> と <b>Google Drive API</b> を有効化<br>
           3. 認証情報 → OAuth 2.0 クライアントID（ウェブアプリ）を作成<br>
           4. 承認済みJavaScriptオリジン に <code>http://localhost:8888</code> を追加<br>
-          5. クライアントIDをここに貼り付け
+          5. OAuthの同意画面 → スコープに <code>gmail.send</code> と <code>drive</code> を追加<br>
+          6. テストユーザーに使用するGoogleアカウントを全員追加（本番公開前）<br>
+          7. クライアントIDをここに貼り付け
         </div>
       </details>
     </div>
@@ -869,11 +870,14 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
       <div class="manual-section" id="man-faq">
         <h2>11. よくある質問</h2>
         <h3>Q. データはどこに保存されていますか？</h3>
-        <p>買い手データ、PJ情報、テンプレート、送信履歴、PDFはすべてブラウザのローカルストレージに保存されています。サーバーには送信されません。ブラウザのデータ削除やシークレットモードでは消えますのでご注意ください。</p>
+        <p>買い手データ、PJ情報、テンプレート、送信履歴はブラウザのローカルストレージに保存されます。Google Drive同期が有効な場合は自動的にGoogleドライブにも保存されます（ヘッダーに「☁️ 同期済」と表示）。PDFはローカルのみ保存。サーバーには送信されません。ブラウザのデータ削除やシークレットモードでローカルデータは消えますが、Drive同期中はドライブから再読み込みできます。</p>
         <h3>Q. 送信に失敗した場合はどうなりますか？</h3>
         <p>送信ログにエラーが表示されます。送信済みフラグは付かないため、再度選択して送信し直せます。</p>
-        <h3>Q. 別のPCでも使えますか？</h3>
-        <p>データはブラウザのローカルストレージに保存されるため、別のPCでは別のデータとなります。データを移行するにはCSVエクスポート→インポートをご利用ください。</p>
+        <h3>Q. 別のPCや複数人で同じデータを使えますか？</h3>
+        <p><b>Google Drive同期機能</b>を使うとチームで同じデータを共有できます。<br>
+        <b>初回セットアップ（管理者）：</b>ログイン後、⚙️設定を開くと「☁️ Google Drive同期」欄に「接続中のファイルID」が表示されます。そのIDをメンバーに共有するか、Googleドライブ上でファイル（ma_app_data.json）をメンバーのGmailアカウントに共有設定してください。<br>
+        <b>メンバー側の設定：</b>⚙️設定 → 「別のファイルIDに切り替え」に管理者から受け取ったIDを貼り付けて「切替」を押すと、同じデータに接続されます。<br>
+        <b>注意：</b>Drive同期を使うにはGoogle Cloud ConsoleでDrive APIの有効化が必要です（初期設定手順を参照）。また同時編集した場合、後から保存した方のデータが優先されます。</p>
         <h3>Q. 配信停止ボタンを押したのに送れてしまいます</h3>
         <p>配信停止はメルマガ一括配信のみ適用されます。個別案件送信では配信停止中の連絡先も表示されます（個別判断で送信可）。</p>
         <h3>Q. テンプレートを間違えて削除してしまいました</h3>
