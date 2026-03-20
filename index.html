@@ -450,7 +450,6 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
         </div>
         <div class="form-group"><label>フォローメモ</label><textarea id="addFollowUpMemo" style="min-height:60px;" placeholder="フォローアップの内容を記入..."></textarea></div>
         <div class="form-group"><label>メモ・備考</label><textarea id="addMemo" style="min-height:60px;" placeholder="自由メモ..."></textarea></div>
-        <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="addOptOut" style="width:15px;height:15px;">配信停止（このアドレスへの送信を停止）</label></div>
         <button class="btn btn-primary" onclick="addBuyerManually()">➕ 追加する</button>
       </div>
     </div>
@@ -524,7 +523,6 @@ tr.optout-row:hover td { background: #f3f4f6 !important; }
       </div>
       <div class="form-group"><label>フォローメモ</label><textarea id="editFollowUpMemo" style="min-height:60px;" placeholder="フォローアップの内容を記入..."></textarea></div>
       <div class="form-group"><label>メモ・備考</label><textarea id="editMemo" style="min-height:60px;" placeholder="自由メモ..."></textarea></div>
-      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="editOptOut" style="width:15px;height:15px;">配信停止（このアドレスへの送信を停止）</label></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeEditBuyer()">キャンセル</button>
@@ -1188,6 +1186,13 @@ function handleLogout() {
 // ============================================================
 function loadAll() {
   state.buyers      = JSON.parse(localStorage.getItem(LS.buyers)      || '[]');
+  // Migrate buyer-level optOut → contact-level optOut (one-time migration)
+  state.buyers.forEach(b => {
+    if (b.optOut) {
+      (b.contacts || []).forEach(c => { if (!c.optOut) c.optOut = true; });
+      delete b.optOut;
+    }
+  });
   state.templates   = JSON.parse(localStorage.getItem(LS.templates)   || '[]');
   state.pjList      = JSON.parse(localStorage.getItem(LS.pjList)      || '[]');
   state.sentHistory = JSON.parse(localStorage.getItem(LS.sentHistory) || '[]');
@@ -1338,8 +1343,11 @@ async function syncUnsubscribes() {
     if (!emails.length) { showToast('配信停止リストは空です', 'info'); return; }
     let count = 0;
     state.buyers.forEach(b => {
-      const hasUnsub = (b.contacts || []).some(c => c.email && emails.includes(c.email.toLowerCase()));
-      if (hasUnsub && !b.optOut) { b.optOut = true; count++; }
+      (b.contacts || []).forEach(c => {
+        if (c.email && emails.includes(c.email.toLowerCase()) && !c.optOut) {
+          c.optOut = true; count++;
+        }
+      });
     });
     if (count > 0) {
       saveBuyers(); rebuildFlatContacts(); filterTable();
@@ -1377,7 +1385,7 @@ function rebuildFlatContacts() {
         email: c.email || '',
         mailType: c.mailType || 'to',
         followUp: b.followUp || { status: '未対応', memo: '', date: '' },
-        optOut: b.optOut || false,
+        optOut: c.optOut || false,
         memo: b.memo || '',
       });
     });
@@ -1448,36 +1456,36 @@ function renderBuyerList() {
 }
 
 function renderOptOutList() {
-  const optOuts = state.buyers.filter(b => b.optOut);
+  const optOuts = state.flatContacts.filter(c => c.optOut);
   const statsEl = document.getElementById('optOutStats');
   const tbody = document.getElementById('optOutListBody');
   if (!statsEl || !tbody) return;
-  statsEl.textContent = `配信停止：${optOuts.length}社`;
+  statsEl.textContent = `配信停止：${optOuts.length}件`;
   if (optOuts.length === 0) {
     tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--gray-400);">配信停止のリストはありません</td></tr>';
     return;
   }
-  tbody.innerHTML = optOuts.map(b => {
-    const emails = (b.contacts || []).filter(c => c.email).map(c =>
-      `<div style="font-size:12px;">${escHtml(c.name ? c.name + '　' : '')}${escHtml(c.email)}</div>`
-    ).join('') || '<span style="color:var(--gray-400);font-size:12px;">メールなし</span>';
-    return `<tr>
-      <td><strong>${escHtml(b.companyName)}</strong></td>
-      <td>${emails}</td>
-      <td style="white-space:nowrap;">
-        <button class="btn btn-outline btn-sm" style="font-size:12px;" onclick="restoreOptOut('${b.id}')">配信再開</button>
-      </td>
-    </tr>`;
-  }).join('');
+  tbody.innerHTML = optOuts.map(c => `<tr>
+    <td><strong>${escHtml(c.companyName)}</strong></td>
+    <td style="font-size:12px;">${escHtml(c.name ? c.name + '　' : '')}${escHtml(c.email)}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-outline btn-sm" style="font-size:12px;" onclick="restoreOptOut('${c.key}')">配信再開</button>
+    </td>
+  </tr>`).join('');
 }
 
-function restoreOptOut(buyerId) {
-  const idx = state.buyers.findIndex(b => b.id === buyerId);
-  if (idx < 0) return;
-  state.buyers[idx].optOut = false;
+function restoreOptOut(key) {
+  const parts = key.split('_');
+  const buyerId = parts.slice(0, -1).join('_');
+  const contactIdx = parseInt(parts[parts.length - 1]);
+  const b = state.buyers.find(b => b.id === buyerId);
+  if (!b) return;
+  const c = (b.contacts || [])[contactIdx];
+  if (!c) return;
+  c.optOut = false;
   saveBuyers(); rebuildFlatContacts(); filterTable();
   renderOptOutList();
-  showToast(`${state.buyers[idx].companyName} の配信停止を解除しました`, 'success');
+  showToast(`${b.companyName} の配信停止を解除しました`, 'success');
 }
 
 // ============================================================
@@ -1512,9 +1520,10 @@ let _cRowCounter = 0;
 function addContactRow(areaId, contact) {
   const area = document.getElementById(areaId);
   const n = area.children.length + 1;
-  const c = contact || { name: '', role: '', email: '', mailType: 'to' };
+  const c = contact || { name: '', role: '', email: '', mailType: 'to', optOut: false };
   const rn = `cr${++_cRowCounter}`;
   const isCC = (c.mailType === 'cc');
+  const isOptOut = c.optOut || false;
   const row = document.createElement('div');
   row.className = 'contact-row';
   row.innerHTML = `
@@ -1526,6 +1535,9 @@ function addContactRow(areaId, contact) {
         </label>
         <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;color:var(--warning);font-weight:600;">
           <input type="radio" name="${rn}" class="c-mailtype" value="cc" ${isCC?'checked':''} style="accent-color:var(--warning);"> CC
+        </label>
+        <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;color:var(--danger);font-weight:600;">
+          <input type="checkbox" class="c-optout" ${isOptOut?'checked':''} style="width:13px;height:13px;accent-color:var(--danger);"> 配信停止
         </label>
         <button type="button" class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:11px;" onclick="removeContactRow(this)">✕ 削除</button>
       </div>
@@ -1560,7 +1572,8 @@ function getContactsFromArea(areaId) {
     const role     = (row.querySelector('.c-role')?.value  || '').trim();
     const email    = (row.querySelector('.c-email')?.value || '').trim();
     const mailType = row.querySelector('.c-mailtype:checked')?.value || 'to';
-    if (name || email) contacts.push({ name, role, email, mailType });
+    const optOut   = row.querySelector('.c-optout')?.checked || false;
+    if (name || email) contacts.push({ name, role, email, mailType, optOut });
   });
   return contacts;
 }
@@ -1592,9 +1605,7 @@ function showEditBuyer(id) {
   document.getElementById('editFollowUpStatus').value = fu.status || '未対応';
   document.getElementById('editFollowUpMemo').value   = fu.memo || '';
   document.getElementById('editFollowUpDate').value   = fu.date || '';
-  // memo & optOut
   document.getElementById('editMemo').value   = b.memo || '';
-  document.getElementById('editOptOut').checked = b.optOut || false;
   document.getElementById('editBuyerModal').classList.remove('hidden');
 }
 function closeEditBuyer() {
@@ -1621,7 +1632,6 @@ function saveEditBuyer() {
       date:   document.getElementById('editFollowUpDate').value,
     },
     memo:    document.getElementById('editMemo').value,
-    optOut:  document.getElementById('editOptOut').checked,
   };
   saveBuyers();
   rebuildFlatContacts();
@@ -1675,7 +1685,6 @@ function addBuyerManually() {
       date:   document.getElementById('addFollowUpDate').value || '',
     },
     memo:   document.getElementById('addMemo').value || '',
-    optOut: document.getElementById('addOptOut').checked,
   };
   state.buyers.push(buyer);
   saveBuyers();
@@ -1686,7 +1695,6 @@ function addBuyerManually() {
   ['addCompanyName','addIndustry','addCaseNo','addFollowUpMemo','addMemo'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('addFollowUpStatus').value = '未対応';
   document.getElementById('addFollowUpDate').value = '';
-  document.getElementById('addOptOut').checked = false;
   populateMethodSelect(document.getElementById('addContactMethod'), '');
   const area = document.getElementById('addContactsArea');
   area.innerHTML = '';
@@ -1845,7 +1853,7 @@ function exportBuyersCsv() {
     }
     const fu = b.followUp || { status: '', memo: '', date: '' };
     rows.push([b.companyName, b.industry, b.caseNo, b.contactMethod, ...contactCols,
-      fu.status||'', fu.date||'', fu.memo||'', b.memo||'', b.optOut ? '停止' : '']);
+      fu.status||'', fu.date||'', fu.memo||'', b.memo||'', cs.some(c => c.optOut) ? '停止' : '']);
   }
   const csvText = '\uFEFF' + rows.map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
@@ -2289,7 +2297,7 @@ function renderTable() {
         <td class="email-cell" title="${escHtml(c.email)}">${c.email || '<span style="color:var(--gray-400)">未登録</span>'} ${c.mailType==='cc'?'<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">CC</span>':''}</td>
         <td>${sentBadge}</td>
         <td>${followUpBadgeHtml(c.followUp)}</td>
-        <td style="text-align:center;"><button class="btn btn-sm" style="padding:2px 6px;font-size:14px;background:none;border:none;cursor:pointer;" onclick="event.stopPropagation();toggleOptOut('${c.buyerId}')" title="${c.optOut?'配信停止中（クリックで解除）':'クリックで配信停止'}">${c.optOut?'🚫':'✅'}</button></td>
+        <td style="text-align:center;"><button class="btn btn-sm" style="padding:2px 6px;font-size:14px;background:none;border:none;cursor:pointer;" onclick="event.stopPropagation();toggleOptOut('${c.key}')" title="${c.optOut?'配信停止中（クリックで解除）':'クリックで配信停止'}">${c.optOut?'🚫':'✅'}</button></td>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(c.memo||'')}">${escHtml(memoShort)}</td>
       </tr>`;
     }).join('');
@@ -3071,15 +3079,19 @@ function nlAddLog(msg, type) {
 // ============================================================
 // OPTOUT TOGGLE
 // ============================================================
-function toggleOptOut(buyerId) {
-  const idx = state.buyers.findIndex(b => b.id === buyerId);
-  if (idx === -1) return;
-  state.buyers[idx].optOut = !state.buyers[idx].optOut;
-  const newVal = state.buyers[idx].optOut;
+function toggleOptOut(key) {
+  const parts = key.split('_');
+  const buyerId = parts.slice(0, -1).join('_');
+  const contactIdx = parseInt(parts[parts.length - 1]);
+  const b = state.buyers.find(b => b.id === buyerId);
+  if (!b) return;
+  const c = (b.contacts || [])[contactIdx];
+  if (!c) return;
+  c.optOut = !c.optOut;
   saveBuyers();
   rebuildFlatContacts();
   filterTable();
-  showToast(`${state.buyers[idx].companyName} を${newVal ? '配信停止' : '配信再開'}しました`, newVal ? 'info' : 'success');
+  showToast(`${b.companyName} を${c.optOut ? '配信停止' : '配信再開'}しました`, c.optOut ? 'info' : 'success');
 }
 
 // ============================================================
